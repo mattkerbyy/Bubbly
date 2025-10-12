@@ -1,7 +1,7 @@
 {
   "name": "bubbly-backend",
   "version": "1.0.0",
-  "description": "Backend API for Bubbly - Social Media Platform",
+  "description": "Backend API for Bubbly — Create, Share & Connect",
   "main": "src/server.js",
   "type": "module",
   "scripts": {

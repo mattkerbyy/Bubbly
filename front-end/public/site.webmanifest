@@ -1,0 +1,15 @@
+{
+  "name": "Bubbly — Create, Share & Connect",
+  "short_name": "Bubbly",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#6FB7E8",
+  "icons": [
+    {
+      "src": "/images/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}
