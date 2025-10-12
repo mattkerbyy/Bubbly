@@ -1,6 +1,6 @@
 # Ignore local root docs that shouldn't be tracked in submodules
-/README.md
-/SETUP_GUIDE.md
+README.md
+SETUP_GUIDE.md
 
 # Node
 node_modules/
