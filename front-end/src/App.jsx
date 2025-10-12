@@ -8,6 +8,10 @@ import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import HomePage from '@/pages/HomePage'
+import LearnMorePage from '@/pages/LearnMorePage'
+import PrivacyPage from '@/pages/PrivacyPage'
+import TermsPage from '@/pages/TermsPage'
+import AboutPage from '@/pages/AboutPage'
 
 function App() {
   const { isAuthenticated, getMe } = useAuthStore()
@@ -38,6 +42,10 @@ function App() {
           path="/register" 
           element={isAuthenticated ? <Navigate to="/home" replace /> : <RegisterPage />} 
         />
+        <Route path="/learn-more" element={<LearnMorePage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/about" element={<AboutPage />} />
 
         {/* Protected Routes */}
         <Route

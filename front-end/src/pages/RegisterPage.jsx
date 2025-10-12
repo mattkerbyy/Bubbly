@@ -147,9 +147,11 @@ export default function RegisterPage() {
               transition={{ delay: 0.2, duration: 0.4 }}
               className="flex justify-center"
             >
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <span className="text-white font-bold text-3xl">B</span>
-              </div>
+              <img 
+                src="/images/bubbly-logo-clearbg.png" 
+                alt="Bubbly Logo" 
+                className="h-16 w-auto"
+              />
             </motion.div>
             <div className="text-center">
               <CardTitle className="text-2xl font-bold">Create Your Account</CardTitle>

@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, MessageCircle, Heart, Search, Zap, Shield } from 'lucide-react'
+import ThemeToggle from '@/components/ThemeToggle'
+import RotatingWords from '@/components/RotatingWords'
+import BackgroundAnimation from '@/components/BackgroundAnimation'
 
 export default function LandingPage() {
+  const rotatingWords = ['Create', 'Share', 'Connect', 'Discover']
   const features = [
     {
       icon: Users,
@@ -58,29 +62,29 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 relative">
+      <BackgroundAnimation />
+      
       {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex items-center gap-2"
-          >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <span className="text-white font-bold text-xl">B</span>
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Bubbly
-            </span>
-          </motion.div>
+          <Link to="/" className="flex items-center gap-2">
+            <motion.img
+              src="/images/bubbly-logo-clearbg.png"
+              alt="Bubbly Logo"
+              className="h-10 w-auto"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            />
+          </Link>
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
             className="flex items-center gap-3"
           >
+            <ThemeToggle />
             <Link to="/login">
               <Button variant="ghost">Log In</Button>
             </Link>
@@ -92,7 +96,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      <section className="relative z-10 container mx-auto px-4 py-16 md:py-24">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -101,10 +105,12 @@ export default function LandingPage() {
             className="space-y-6"
           >
             <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-              Create, Share &{' '}
-              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Connect
-              </span>
+              <RotatingWords 
+                words={rotatingWords} 
+                className="inline-block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent min-w-[200px]"
+              />
+              <br />
+              <span className="text-foreground">Your World</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground">
               Join Bubbly to share moments, follow creators, and engage with communities that inspire you.
@@ -115,9 +121,11 @@ export default function LandingPage() {
                   Get Started
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Learn More
-              </Button>
+              <Link to="/learn-more">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  Learn More
+                </Button>
+              </Link>
             </div>
           </motion.div>
 
@@ -150,7 +158,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      <section className="relative z-10 container mx-auto px-4 py-16 md:py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -193,7 +201,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 py-16 md:py-24">
+      <section className="relative z-10 container mx-auto px-4 py-16 md:py-24">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -224,22 +232,19 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t mt-16">
+      <footer className="relative z-10 border-t mt-16 bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <span className="text-white font-bold">B</span>
-              </div>
-              <span className="font-semibold">Bubbly</span>
+              <img src="/images/bubbly-logo-clearbg.png" alt="Bubbly" className="h-8 w-auto" />
             </div>
             <p className="text-sm text-muted-foreground">
               © 2025 Bubbly. All rights reserved.
             </p>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-              <a href="#" className="hover:text-foreground transition-colors">About</a>
+              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+              <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+              <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
             </div>
           </div>
         </div>

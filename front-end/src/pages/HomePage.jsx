@@ -43,10 +43,11 @@ export default function HomePage() {
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-2"
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <span className="text-white font-bold text-xl">B</span>
-            </div>
-            <span className="font-bold text-xl text-foreground">Bubbly</span>
+            <img 
+              src="/images/bubbly-logo-clearbg.png" 
+              alt="Bubbly Logo" 
+              className="h-10 w-auto"
+            />
           </motion.div>
 
           <motion.div
