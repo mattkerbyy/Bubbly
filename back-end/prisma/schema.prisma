@@ -10,17 +10,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Example models - customize based on your needs
+// User model with authentication and profile fields
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
-  password  String
-  name      String?
-  bio       String?
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  email       String   @unique
+  username    String   @unique
+  password    String
+  name        String?
+  bio         String?
+  avatar      String?
+  coverPhoto  String?
+  location    String?
+  website     String?
+  verified    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   posts     Post[]
   comments  Comment[]
