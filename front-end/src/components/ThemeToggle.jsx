@@ -4,34 +4,36 @@ import { Button } from '@/components/ui/button'
 import { useEffect } from 'react'
 
 export default function ThemeToggle() {
-  const { theme, setTheme } = useUiStore()
+  const theme = useUiStore((state) => state.theme)
+  const toggleTheme = useUiStore((state) => state.toggleTheme)
 
+  // Apply theme on mount and changes
   useEffect(() => {
-    // Apply theme to document
     const root = document.documentElement
-    if (theme === 'dark') {
-      root.classList.add('dark')
-    } else {
-      root.classList.remove('dark')
-    }
+    // Remove both classes first to ensure clean state
+    root.classList.remove('light', 'dark')
+    
+    // Add the current theme class
+    root.classList.add(theme)
   }, [theme])
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light')
+  const handleToggle = () => {
+    toggleTheme()
   }
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={toggleTheme}
-      className="w-10 h-10"
-      aria-label="Toggle theme"
+      onClick={handleToggle}
+      className="w-10 h-10 relative"
+      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      title={`Current: ${theme}. Click to toggle.`}
     >
       {theme === 'light' ? (
-        <Moon className="h-5 w-5" />
+        <Moon className="h-5 w-5 transition-transform duration-200 hover:rotate-12" />
       ) : (
-        <Sun className="h-5 w-5" />
+        <Sun className="h-5 w-5 transition-transform duration-200 hover:rotate-90" />
       )}
     </Button>
   )

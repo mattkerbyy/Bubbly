@@ -62,9 +62,8 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 relative">
+    <div className="min-h-screen relative bg-gradient-to-br from-primary/5 via-background to-secondary/5 dark:from-primary/10 dark:via-background dark:to-secondary/10">
       <BackgroundAnimation />
-      
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -94,9 +93,8 @@ export default function LandingPage() {
           </motion.div>
         </div>
       </header>
-
       {/* Hero Section */}
-      <section className="relative z-10 container mx-auto px-4 py-16 md:py-24">
+      <section className="container mx-auto px-4 py-16 md:py-24 relative z-10">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -113,7 +111,7 @@ export default function LandingPage() {
               <span className="text-foreground">Your World</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground">
-              Join Bubbly to share moments, follow creators, and engage with communities that inspire you.
+              Join Bubbly to share moments, follow friends, and engage with communities that inspire you.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link to="/register">
@@ -158,7 +156,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="relative z-10 container mx-auto px-4 py-16 md:py-24">
+      <section className="container mx-auto px-4 py-16 md:py-24 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -201,7 +199,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative z-10 container mx-auto px-4 py-16 md:py-24">
+      <section className="container mx-auto px-4 py-16 md:py-24 relative z-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -232,7 +230,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t mt-16 bg-background">
+      <footer className="border-t mt-16 bg-background relative z-10">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">

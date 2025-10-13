@@ -1,8 +1,57 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
-export const useUiStore = create((set) => ({
-  theme: 'light',
-  showModal: false,
-  setTheme: (theme) => set(() => ({ theme })),
-  toggleModal: () => set((state) => ({ showModal: !state.showModal })),
-}))
+// Helper to get system theme
+const getSystemTheme = () => {
+  if (typeof window === 'undefined') return 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+// Helper to get initial theme (prioritize stored, fallback to system)
+const getInitialTheme = () => {
+  if (typeof window === 'undefined') return 'light'
+  
+  try {
+    const stored = localStorage.getItem('bubbly-ui')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (parsed.state?.theme) {
+        return parsed.state.theme
+      }
+    }
+  } catch (error) {
+    console.error('Error reading stored theme:', error)
+  }
+  
+  return getSystemTheme()
+}
+
+export const useUiStore = create(
+  persist(
+    (set, get) => ({
+      theme: getInitialTheme(),
+      showModal: false,
+      setTheme: (theme) => {
+        set({ theme })
+        // Apply theme immediately to DOM
+        if (typeof document !== 'undefined') {
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark')
+          } else {
+            document.documentElement.classList.remove('dark')
+          }
+        }
+      },
+      toggleTheme: () => {
+        const currentTheme = get().theme
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light'
+        get().setTheme(newTheme)
+      },
+      toggleModal: () => set((state) => ({ showModal: !state.showModal })),
+    }),
+    {
+      name: 'bubbly-ui',
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
+)

@@ -4,50 +4,50 @@
 
 @layer base {
   :root {
-    /* Light theme colors (hex) */
-    --background: #FFFFFF; /* white */
-    --foreground: #0F172A; /* dark slate */
-    --card: #FFFFFF;
-    --card-foreground: #0F172A;
-    --popover: #FFFFFF;
-    --popover-foreground: #0F172A;
-    --primary: #6FB7E8; /* logo sky blue */
-    --primary-foreground: #FFFFFF;
-    --secondary: #D6B8FF; /* soft lavender */
-    --secondary-foreground: #0F172A;
-    --muted: #F3F6F9; /* subtle surface */
-    --muted-foreground: #6B7280; /* gray */
-    --accent: #9FEAD3; /* mint */
-    --accent-foreground: #0F172A;
-    --destructive: #EF4444; /* red */
-    --destructive-foreground: #FFFFFF;
-    --border: #E6EEF8; /* pale blue border */
-    --input: #E6EEF8;
-    --ring: #2B6CB0; /* darker blue for focus ring */
+    /* Light theme colors (HSL for Tailwind compatibility) */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 201 74% 64%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 268 65% 84%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 157 55% 76%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 213 56% 37%;
     --radius: 0.5rem;
   }
 
   .dark {
-    /* Dark theme colors (hex) */
-    --background: #0F172A; /* dark slate */
-    --foreground: #E6EEF8; /* light text */
-    --card: #0F172A;
-    --card-foreground: #E6EEF8;
-    --popover: #0F172A;
-    --popover-foreground: #E6EEF8;
-    --primary: #60A5FA; /* slightly lighter blue for dark bg */
-    --primary-foreground: #0F172A;
-    --secondary: #7C3AED; /* purple */
-    --secondary-foreground: #E6EEF8;
-    --muted: #1F2937; /* dark muted surface */
-    --muted-foreground: #9CA3AF;
-    --accent: #34D399; /* green mint */
-    --accent-foreground: #0F172A;
-    --destructive: #DC2626;
-    --destructive-foreground: #E6EEF8;
-    --border: #1F2937;
-    --input: #1F2937;
-    --ring: #60A5FA;
+    /* Dark theme colors (HSL) - Improved for better contrast and aesthetics */
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 201 96% 75%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 270 95% 75%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 158 64% 52%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 63% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 28% 17%;
+    --input: 217 33% 17%;
+    --ring: 201 96% 75%;
   }
 }
 

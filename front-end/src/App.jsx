@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useUiStore } from '@/stores/useUiStore'
+import { initializeTheme } from '@/lib/theme'
 import PrivateRoute from '@/components/PrivateRoute'
 
 // Pages
@@ -15,6 +17,18 @@ import AboutPage from '@/pages/AboutPage'
 
 function App() {
   const { isAuthenticated, getMe } = useAuthStore()
+  const theme = useUiStore((state) => state.theme)
+
+  // Initialize theme immediately
+  useEffect(() => {
+    initializeTheme()
+  }, [])
+
+  // Apply theme changes
+  useEffect(() => {
+    document.documentElement.classList.remove('light', 'dark')
+    document.documentElement.classList.add(theme)
+  }, [theme])
 
   // Restore user session on app load
   useEffect(() => {
