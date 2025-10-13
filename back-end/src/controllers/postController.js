@@ -66,6 +66,7 @@ export const getAllPosts = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query
     const skip = (parseInt(page) - 1) * parseInt(limit)
+    const userId = req.user.id
 
     // Get posts with user info and counts
     const posts = await prisma.post.findMany({
@@ -88,16 +89,31 @@ export const getAllPosts = async (req, res) => {
             likes: true,
             comments: true
           }
+        },
+        likes: {
+          where: {
+            userId
+          },
+          select: {
+            id: true
+          }
         }
       }
     })
+
+    // Add isLiked field to each post
+    const postsWithLikeStatus = posts.map(post => ({
+      ...post,
+      isLiked: post.likes.length > 0,
+      likes: undefined // Remove the likes array from response
+    }))
 
     // Get total count for pagination
     const totalPosts = await prisma.post.count()
 
     res.status(200).json({
       success: true,
-      data: posts,
+      data: postsWithLikeStatus,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(totalPosts / parseInt(limit)),

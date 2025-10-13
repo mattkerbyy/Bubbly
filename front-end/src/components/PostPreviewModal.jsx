@@ -4,9 +4,13 @@ import { formatDistanceToNow } from 'date-fns'
 import { X, Heart, MessageCircle, Share2, MoreHorizontal, ExternalLink, Trash2 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useDeletePost } from '@/hooks/usePosts'
+import { useToggleLike } from '@/hooks/useLikes'
+import { usePostComments } from '@/hooks/useComments'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import CommentList from '@/components/CommentList'
+import CommentInput from '@/components/CommentInput'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,9 +33,29 @@ const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replac
 export default function PostPreviewModal({ isOpen, post, onClose }) {
   const { user } = useAuthStore()
   const deletePostMutation = useDeletePost()
+  const toggleLikeMutation = useToggleLike()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isLiked, setIsLiked] = useState(post?.isLiked || false)
+  const [likeCount, setLikeCount] = useState(post?._count?.likes || 0)
+  const [editingComment, setEditingComment] = useState(null)
 
   const isOwnPost = user?.id === post?.user?.id
+
+  // Fetch comments for this post
+  const {
+    data: commentsData,
+    isLoading: commentsLoading,
+  } = usePostComments(post?.id, { enabled: isOpen && !!post?.id })
+
+  const comments = commentsData?.comments || []
+
+  // Update like status when post changes
+  useEffect(() => {
+    if (post) {
+      setIsLiked(post.isLiked || false)
+      setLikeCount(post._count?.likes || 0)
+    }
+  }, [post])
 
   // Close on Escape key
   useEffect(() => {
@@ -68,6 +92,29 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
     } catch (error) {
       console.error('Failed to delete post:', error)
     }
+  }
+
+  const handleLike = async () => {
+    // Optimistic update
+    setIsLiked(!isLiked)
+    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1)
+
+    try {
+      await toggleLikeMutation.mutateAsync(post.id)
+    } catch (error) {
+      // Revert on error
+      setIsLiked(isLiked)
+      setLikeCount(likeCount)
+      console.error('Failed to toggle like:', error)
+    }
+  }
+
+  const handleEditComment = (comment) => {
+    setEditingComment(comment)
+  }
+
+  const handleCancelEdit = () => {
+    setEditingComment(null)
   }
 
   const getInitials = (name) => {
@@ -233,12 +280,12 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
                       </div>
                     </div>
                     <span className="ml-1 hover:underline cursor-pointer">
-                      {post._count?.likes || 0}
+                      {likeCount}
                     </span>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="hover:underline cursor-pointer">
-                      {post._count?.comments || 0} {post._count?.comments === 1 ? 'comment' : 'comments'}
+                      {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
                     </span>
                   </div>
                 </div>
@@ -251,9 +298,22 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1 gap-2 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                  onClick={handleLike}
+                  disabled={toggleLikeMutation.isPending}
+                  className={`flex-1 gap-2 transition-colors ${
+                    isLiked
+                      ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20'
+                      : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+                  }`}
                 >
-                  <Heart className="h-5 w-5" />
+                  <motion.div
+                    key={isLiked ? 'liked' : 'unliked'}
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                  >
+                    <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
+                  </motion.div>
                   <span className="font-medium">Like</span>
                 </Button>
 
@@ -279,38 +339,19 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
               <Separator />
 
               {/* Comments Section */}
-              <div className="p-4">
-                <div className="space-y-4">
-                  {/* Comment Example - Will be dynamic when comments are implemented */}
-                  {post._count?.comments > 0 ? (
-                    <div className="text-center text-sm text-muted-foreground py-4">
-                      <p>Comments will appear here</p>
-                      <p className="text-xs mt-1">(Phase 3: Likes & Comments coming soon)</p>
-                    </div>
-                  ) : (
-                    <div className="text-center text-sm text-muted-foreground py-4">
-                      <p>No comments yet</p>
-                      <p className="text-xs mt-1">Be the first to comment!</p>
-                    </div>
-                  )}
+              <div className="p-4 space-y-4">
+                <CommentList
+                  comments={comments}
+                  onEdit={handleEditComment}
+                  isLoading={commentsLoading}
+                />
 
-                  {/* Comment Input */}
-                  <div className="flex items-center gap-2 pt-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                        U
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 bg-muted rounded-full px-4 py-2">
-                      <input
-                        type="text"
-                        placeholder="Write a comment..."
-                        className="w-full bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
-                        disabled
-                      />
-                    </div>
-                  </div>
-                </div>
+                {/* Comment Input */}
+                <CommentInput
+                  postId={post.id}
+                  editingComment={editingComment}
+                  onCancelEdit={handleCancelEdit}
+                />
               </div>
             </div>
           </motion.div>

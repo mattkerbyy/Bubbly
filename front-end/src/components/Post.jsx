@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Edit, ExternalLink } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useDeletePost } from '@/hooks/usePosts'
+import { useToggleLike } from '@/hooks/useLikes'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -32,9 +33,12 @@ const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
 export default function Post({ post }) {
   const { user } = useAuthStore()
   const deletePostMutation = useDeletePost()
+  const toggleLikeMutation = useToggleLike()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [showPostPreview, setShowPostPreview] = useState(false)
+  const [isLiked, setIsLiked] = useState(post.isLiked || false)
+  const [likeCount, setLikeCount] = useState(post._count?.likes || 0)
 
   const isOwnPost = user?.id === post.user.id
 
@@ -62,6 +66,23 @@ export default function Post({ post }) {
       setShowDeleteDialog(false)
     } catch (error) {
       console.error('Failed to delete post:', error)
+    }
+  }
+
+  const handleLike = async (e) => {
+    e.stopPropagation()
+    
+    // Optimistic update
+    setIsLiked(!isLiked)
+    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1)
+
+    try {
+      await toggleLikeMutation.mutateAsync(post.id)
+    } catch (error) {
+      // Revert on error
+      setIsLiked(isLiked)
+      setLikeCount(likeCount)
+      console.error('Failed to toggle like:', error)
     }
   }
 
@@ -193,17 +214,31 @@ export default function Post({ post }) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-2 text-muted-foreground hover:text-primary"
+                  onClick={handleLike}
+                  disabled={toggleLikeMutation.isPending}
+                  className={`gap-2 transition-colors ${
+                    isLiked
+                      ? 'text-red-500 hover:text-red-600'
+                      : 'text-muted-foreground hover:text-primary'
+                  }`}
                 >
-                  <Heart className="h-5 w-5" />
-                  <span className="text-sm font-medium">
-                    {post._count?.likes || 0}
-                  </span>
+                  <motion.div
+                    key={isLiked ? 'liked' : 'unliked'}
+                    initial={{ scale: 0.8 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                  >
+                    <Heart
+                      className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`}
+                    />
+                  </motion.div>
+                  <span className="text-sm font-medium">{likeCount}</span>
                 </Button>
 
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={() => setShowPostPreview(true)}
                   className="gap-2 text-muted-foreground hover:text-primary"
                 >
                   <MessageCircle className="h-5 w-5" />
