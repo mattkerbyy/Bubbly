@@ -59,3 +59,33 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Smooth theme transitions */
+:root {
+  color-scheme: light dark;
+}
+
+html {
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+html * {
+  transition: background-color 0.3s ease-in-out, 
+              border-color 0.3s ease-in-out, 
+              color 0.3s ease-in-out,
+              fill 0.3s ease-in-out,
+              stroke 0.3s ease-in-out;
+}
+
+/* Preserve animations and transforms */
+html *[class*="animate"],
+html *[class*="transition"],
+html *[style*="transition"],
+html *[style*="animation"] {
+  /* Let component-specific transitions take precedence */
+}
+
+/* Don't transition images */
+img, video, canvas, svg {
+  transition: opacity 0.3s ease-in-out;
+}
