@@ -1,0 +1,11 @@
+# Keep folder structure but ignore all uploaded files
+# This ensures posts/ and profiles/ folders are tracked but files inside are not pushed to git
+
+# Ignore everything in this directory
+*
+
+# But don't ignore subdirectories themselves
+!*/
+
+# And don't ignore .gitignore files
+!.gitignore

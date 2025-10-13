@@ -14,9 +14,8 @@ npm-debug.log*
 Thumbs.db
 
 # Uploads
-# Note: uploads/ folder contents are ignored by the .gitignore files inside the uploads/ folder
-# Keep the uploads/ directory tracked so empty posts/ and profiles/ folders are preserved in git
-uploads/
+# The uploads/ directory should NOT be globally ignored here; nested .gitignore files inside
+# uploads/ will ignore their contents while keeping the folders tracked (see uploads/.gitignore)
 
 # Docs
 README.md
