@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
-import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Edit } from 'lucide-react'
+import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Edit, ExternalLink } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useDeletePost } from '@/hooks/usePosts'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -71,6 +71,39 @@ export default function Post({ post }) {
     return `${API_URL}${imagePath}`
   }
 
+  const renderContent = (content) => {
+    if (!content) return null
+    
+    // Simple hashtag and link detection
+    const parts = content.split(/(\s+)/)
+    return parts.map((part, i) => {
+      // Hashtag
+      if (part.startsWith('#')) {
+        return (
+          <span key={i} className="text-primary hover:underline cursor-pointer font-medium">
+            {part}
+          </span>
+        )
+      }
+      // URL
+      if (part.match(/^https?:\/\//)) {
+        return (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline inline-flex items-center gap-1"
+          >
+            {part}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )
+      }
+      return <span key={i}>{part}</span>
+    })
+  }
+
   return (
     <>
       <motion.div
@@ -125,8 +158,8 @@ export default function Post({ post }) {
             {/* Content */}
             <div className="space-y-4">
               {post.content && (
-                <p className="text-foreground whitespace-pre-wrap break-words">
-                  {post.content}
+                <p className="text-foreground whitespace-pre-wrap break-words leading-relaxed">
+                  {renderContent(post.content)}
                 </p>
               )}
 
