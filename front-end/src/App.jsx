@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
+import { Toaster } from 'sonner'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useUiStore } from '@/stores/useUiStore'
 import { initializeTheme } from '@/lib/theme'
@@ -36,12 +37,14 @@ function App() {
   }, [getMe])
 
   return (
-    <Router
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
+    <>
+      <Toaster position="top-center" richColors />
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
       <Routes>
         {/* Public Routes */}
         <Route 
@@ -78,6 +81,7 @@ function App() {
         />
       </Routes>
     </Router>
+    </>
   )
 }
 

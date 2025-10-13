@@ -2,9 +2,15 @@ import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { LogOut, Home, User, MessageCircle, Bell, Search } from 'lucide-react'
+import { LogOut, Home, User, MessageCircle, Bell, Search, Users, Bookmark } from 'lucide-react'
+import ThemeToggle from '@/components/ThemeToggle'
+import CreatePost from '@/components/CreatePost'
+import Feed from '@/components/Feed'
+
+// Normalize backend origin so uploaded image paths work correctly
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -25,213 +31,223 @@ export default function HomePage() {
       .slice(0, 2)
   }
 
-  const menuItems = [
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http')) return imagePath
+    return `${API_URL}${imagePath}`
+  }
+
+  const sidebarItems = [
     { icon: Home, label: 'Home', active: true },
-    { icon: User, label: 'Profile', active: false },
-    { icon: MessageCircle, label: 'Messages', active: false },
-    { icon: Bell, label: 'Notifications', active: false },
-    { icon: Search, label: 'Search', active: false },
+    { icon: User, label: 'Profile' },
+    { icon: Users, label: 'Friends' },
+    { icon: MessageCircle, label: 'Messages' },
+    { icon: Bell, label: 'Notifications' },
+    { icon: Bookmark, label: 'Saved' },
+  ]
+
+  const suggestedUsers = [
+    { id: 1, name: 'Sarah Johnson', username: 'sarahj', avatar: null },
+    { id: 2, name: 'Mike Chen', username: 'mikechen', avatar: null },
+    { id: 3, name: 'Emma Davis', username: 'emmad', avatar: null },
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2"
-          >
-            <img 
-              src="/images/bubbly-logo-clearbg.png" 
-              alt="Bubbly Logo" 
-              className="h-10 w-auto"
-            />
-          </motion.div>
+      <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
+        <div className="container max-w-7xl mx-auto px-4">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-2"
+            >
+              <img 
+                src="/images/bubbly-logo-clearbg.png" 
+                alt="Bubbly" 
+                className="h-10 w-auto cursor-pointer"
+                onClick={() => navigate('/home')}
+              />
+            </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4"
-          >
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={user?.avatar} />
-                <AvatarFallback className="bg-primary text-white">
-                  {getInitials(user?.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden sm:block">
-                <p className="text-sm font-medium">{user?.name || 'User'}</p>
-                <p className="text-xs text-muted-foreground">@{user?.username || 'username'}</p>
+            {/* Search */}
+            <div className="flex-1 max-w-md mx-4 hidden md:block">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search Bubbly"
+                  className="w-full h-10 pl-10 pr-4 rounded-full bg-muted border-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="text-muted-foreground hover:text-destructive"
+
+            {/* Right actions */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-2"
             >
-              <LogOut className="h-5 w-5" />
-            </Button>
-          </motion.div>
+              <ThemeToggle />
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative"
+              >
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
+              </Button>
+
+              <div className="flex items-center gap-3 ml-2">
+                <Avatar className="h-9 w-9 cursor-pointer">
+                  <AvatarImage src={getImageUrl(user?.avatar)} />
+                  <AvatarFallback className="bg-primary text-white text-sm">
+                    {getInitials(user?.name)}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </motion.div>
+          </div>
         </div>
       </header>
 
-      <div className="container py-8">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          {/* Sidebar */}
-          <motion.aside
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="md:col-span-3"
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Menu</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {menuItems.map((item, index) => (
-                  <motion.button
+      {/* Main content - 3 column layout */}
+      <div className="container max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Sidebar - Hidden on mobile */}
+          <aside className="hidden lg:block lg:col-span-3">
+            <div className="sticky top-20 space-y-4">
+              {/* User profile card */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-card border rounded-lg p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={getImageUrl(user?.avatar)} />
+                    <AvatarFallback className="bg-primary text-white">
+                      {getInitials(user?.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm truncate">{user?.name || 'User'}</p>
+                    <p className="text-xs text-muted-foreground truncate">@{user?.username || 'username'}</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Navigation */}
+              <motion.nav
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-card border rounded-lg p-2 space-y-1"
+              >
+                {sidebarItems.map((item, index) => (
+                  <button
                     key={item.label}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 + index * 0.05 }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                       item.active
-                        ? 'bg-primary text-white'
+                        ? 'bg-primary/10 text-primary font-medium'
                         : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                     }`}
                   >
-                    <item.icon className="h-5 w-5" />
-                    <span className="font-medium">{item.label}</span>
-                  </motion.button>
+                    <item.icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="text-sm">{item.label}</span>
+                  </button>
                 ))}
-              </CardContent>
-            </Card>
-          </motion.aside>
+              </motion.nav>
+            </div>
+          </aside>
 
-          {/* Main Content */}
-          <motion.main
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="md:col-span-6"
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>Welcome to Bubbly! 🎉</CardTitle>
-                <CardDescription>
-                  You're successfully authenticated and viewing the home feed
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {/* Success Message */}
-                  <div className="p-6 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/20">
-                    <h3 className="font-semibold text-lg mb-2">
-                      🎊 Authentication Complete!
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      You've successfully completed Phase 1 of Bubbly. The authentication flow is working perfectly!
-                    </p>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span>✅ User registration</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span>✅ User login</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span>✅ Protected routes</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span>✅ User state management</span>
-                      </div>
-                    </div>
-                  </div>
+          {/* Main Feed */}
+          <main className="lg:col-span-6 space-y-4">
+            <CreatePost />
+            <Feed />
+          </main>
 
-                  {/* User Info */}
-                  <div className="p-4 rounded-lg bg-muted/50 border border-border">
-                    <h4 className="font-medium mb-3">Your Account Details</h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Name:</span>
-                        <span className="font-medium">{user?.name || 'Not set'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Username:</span>
-                        <span className="font-medium">@{user?.username || 'Not set'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Email:</span>
-                        <span className="font-medium">{user?.email || 'Not set'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Status:</span>
-                        <span className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                          <span className="text-green-600 font-medium">Active</span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Next Steps */}
-                  <div className="p-4 rounded-lg bg-accent/50 border border-accent">
-                    <h4 className="font-medium mb-3">🚀 Next Steps (Phase 2)</h4>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
-                      <li>• Create and view posts</li>
-                      <li>• Like and comment on posts</li>
-                      <li>• Build user feed with infinite scroll</li>
-                      <li>• Implement real-time updates</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.main>
-
-          {/* Right Sidebar */}
-          <motion.aside
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="md:col-span-3"
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Suggested</CardTitle>
-                <CardDescription>People you might know</CardDescription>
-              </CardHeader>
-              <CardContent>
+          {/* Right Sidebar - Hidden on mobile/tablet */}
+          <aside className="hidden xl:block lg:col-span-3">
+            <div className="sticky top-20 space-y-4">
+              {/* Suggested Users */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-card border rounded-lg p-4"
+              >
+                <h3 className="font-semibold text-sm mb-4">Suggested for you</h3>
                 <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center gap-3">
+                  {suggestedUsers.map((suggestedUser) => (
+                    <div key={suggestedUser.id} className="flex items-center gap-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-muted">U{i}</AvatarFallback>
+                        <AvatarFallback className="bg-muted text-muted-foreground">
+                          {getInitials(suggestedUser.name)}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">User {i}</p>
-                        <p className="text-xs text-muted-foreground">@user{i}</p>
+                        <p className="text-sm font-medium truncate">{suggestedUser.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">@{suggestedUser.username}</p>
                       </div>
-                      <Button size="sm" variant="outline" className="text-xs">
+                      <Button size="sm" variant="outline" className="text-xs h-8">
                         Follow
                       </Button>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </motion.aside>
+              </motion.div>
+
+              {/* Footer links */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="px-4 text-xs text-muted-foreground space-y-2"
+              >
+                <div className="flex flex-wrap gap-2">
+                  <a href="/about" className="hover:underline">About</a>
+                  <span>•</span>
+                  <a href="/terms" className="hover:underline">Terms</a>
+                  <span>•</span>
+                  <a href="/privacy" className="hover:underline">Privacy</a>
+                </div>
+                <p>© 2024 Bubbly. All rights reserved.</p>
+              </motion.div>
+            </div>
+          </aside>
         </div>
       </div>
+
+      {/* Mobile bottom nav - Only visible on mobile */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40">
+        <div className="flex items-center justify-around h-16 px-2">
+          {sidebarItems.slice(0, 5).map((item) => (
+            <button
+              key={item.label}
+              className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg ${
+                item.active ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }
