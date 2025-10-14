@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Edit, ExternalLink } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
@@ -32,6 +33,7 @@ const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
 
 export default function Post({ post }) {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
   const deletePostMutation = useDeletePost()
   const toggleLikeMutation = useToggleLike()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -137,7 +139,10 @@ export default function Post({ post }) {
           <CardContent className="p-6">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
+              <div 
+                className="flex items-center gap-3 cursor-pointer"
+                onClick={() => navigate(`/profile/${post.user.username}`)}
+              >
                 <Avatar className="h-12 w-12">
                   <AvatarImage src={getImageUrl(post.user.avatar)} />
                   <AvatarFallback className="bg-primary text-white">
@@ -145,7 +150,7 @@ export default function Post({ post }) {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold text-foreground hover:underline cursor-pointer">
+                  <p className="font-semibold text-foreground hover:underline">
                     {post.user.name || 'Unknown User'}
                   </p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">

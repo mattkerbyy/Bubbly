@@ -38,8 +38,8 @@ export default function HomePage() {
   }
 
   const sidebarItems = [
-    { icon: Home, label: 'Home', active: true },
-    { icon: User, label: 'Profile' },
+    { icon: Home, label: 'Home', active: true, onClick: () => navigate('/home') },
+    { icon: User, label: 'Profile', onClick: () => navigate(`/profile/${user?.username}`) },
     { icon: Users, label: 'Friends' },
     { icon: MessageCircle, label: 'Messages' },
     { icon: Bell, label: 'Notifications' },
@@ -102,7 +102,10 @@ export default function HomePage() {
               </Button>
 
               <div className="flex items-center gap-3 ml-2">
-                <Avatar className="h-9 w-9 cursor-pointer">
+                <Avatar 
+                  className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => navigate(`/profile/${user?.username}`)}
+                >
                   <AvatarImage src={getImageUrl(user?.avatar)} />
                   <AvatarFallback className="bg-primary text-white text-sm">
                     {getInitials(user?.name)}
@@ -134,7 +137,8 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="bg-card border rounded-lg p-4"
+                className="bg-card border rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate(`/profile/${user?.username}`)}
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
@@ -160,6 +164,7 @@ export default function HomePage() {
                 {sidebarItems.map((item, index) => (
                   <button
                     key={item.label}
+                    onClick={item.onClick}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                       item.active
                         ? 'bg-primary/10 text-primary font-medium'

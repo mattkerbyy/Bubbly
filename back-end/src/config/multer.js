@@ -42,7 +42,7 @@ const imageFileFilter = (req, file, cb) => {
 }
 
 // Create multer instances
-export const uploadPostImage = multer({
+export const postUpload = multer({
   storage: postStorage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
@@ -50,10 +50,14 @@ export const uploadPostImage = multer({
   fileFilter: imageFileFilter
 })
 
-export const uploadProfileImage = multer({
+export const profileUpload = multer({
   storage: profileStorage,
   limits: {
-    fileSize: 2 * 1024 * 1024 // 2MB limit for profiles
+    fileSize: 5 * 1024 * 1024 // 5MB limit for profiles (avatar and cover)
   },
   fileFilter: imageFileFilter
 })
+
+// Legacy exports for backward compatibility
+export const uploadPostImage = postUpload
+export const uploadProfileImage = profileUpload
