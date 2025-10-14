@@ -12,6 +12,7 @@ import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import HomePage from '@/pages/HomePage'
 import ProfilePage from '@/pages/ProfilePage'
+import PostDetailPage from '@/pages/PostDetailPage'
 import LearnMorePage from '@/pages/LearnMorePage'
 import PrivacyPage from '@/pages/PrivacyPage'
 import TermsPage from '@/pages/TermsPage'
@@ -79,6 +80,14 @@ function App() {
           element={
             <PrivateRoute>
               <ProfilePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/post/:postId"
+          element={
+            <PrivateRoute>
+              <PostDetailPage />
             </PrivateRoute>
           }
         />

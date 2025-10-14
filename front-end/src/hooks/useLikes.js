@@ -90,8 +90,9 @@ export const useToggleLike = () => {
       console.error('Error toggling like:', error)
     },
     onSettled: () => {
-      // Refetch to ensure data is in sync
+      // Refetch to ensure data is in sync across all pages
       queryClient.invalidateQueries({ queryKey: ['posts'] })
+      queryClient.invalidateQueries({ queryKey: ['post'] }) // Invalidate all individual post queries
     },
   })
 }

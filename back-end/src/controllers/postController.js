@@ -161,6 +161,7 @@ export const getAllPosts = async (req, res) => {
 export const getPostById = async (req, res) => {
   try {
     const { id } = req.params
+    const userId = req.user.id
 
     const post = await prisma.post.findUnique({
       where: { id },
@@ -170,7 +171,8 @@ export const getPostById = async (req, res) => {
             id: true,
             name: true,
             username: true,
-            avatar: true
+            avatar: true,
+            verified: true,
           }
         },
         comments: {
@@ -180,7 +182,8 @@ export const getPostById = async (req, res) => {
                 id: true,
                 name: true,
                 username: true,
-                avatar: true
+                avatar: true,
+                verified: true,
               }
             }
           },
@@ -188,21 +191,18 @@ export const getPostById = async (req, res) => {
             createdAt: 'desc'
           }
         },
-        likes: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                username: true
-              }
-            }
-          }
-        },
         _count: {
           select: {
             likes: true,
             comments: true
+          }
+        },
+        likes: {
+          where: {
+            userId
+          },
+          select: {
+            id: true
           }
         }
       }
@@ -215,9 +215,16 @@ export const getPostById = async (req, res) => {
       })
     }
 
+    // Add isLiked field
+    const postWithLikeStatus = {
+      ...post,
+      isLiked: post.likes.length > 0,
+      likes: undefined // Remove the likes array from response
+    }
+
     res.status(200).json({
       success: true,
-      data: post
+      data: postWithLikeStatus
     })
   } catch (error) {
     console.error('Get post error:', error)

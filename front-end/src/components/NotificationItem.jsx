@@ -78,10 +78,11 @@ export default function NotificationItem({ notification, onClose }) {
 
     // Navigate based on notification type
     if (notification.type === 'follow') {
+      // For follow notifications, go to the follower's profile
       navigate(`/profile/${notification.sender?.username}`)
     } else if (notification.postId) {
-      // For likes and comments, navigate to the post (you might want to create a post detail page)
-      navigate('/home') // For now, just go to home feed
+      // For likes and comments, navigate to the specific post
+      navigate(`/post/${notification.postId}`)
     }
 
     // Close dropdown
