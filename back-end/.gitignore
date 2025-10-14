@@ -13,9 +13,5 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Uploads
-# The uploads/ directory should NOT be globally ignored here; nested .gitignore files inside
-# uploads/ will ignore their contents while keeping the folders tracked (see uploads/.gitignore)
-
 # Docs
 README.md
