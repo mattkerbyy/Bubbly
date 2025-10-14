@@ -19,6 +19,8 @@ export const useInfiniteNotifications = () => {
     enabled: !!currentUser,
     staleTime: 1000 * 30, // 30 seconds
     refetchInterval: 1000 * 30, // Poll every 30 seconds for real-time updates
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnMount: true, // Refetch when component mounts
   })
 }
 
@@ -32,8 +34,10 @@ export const useUnreadCount = () => {
     queryKey: ['notifications', 'unread-count'],
     queryFn: notificationService.getUnreadCount,
     enabled: !!currentUser,
-    staleTime: 1000 * 10, // 10 seconds
-    refetchInterval: 1000 * 10, // Poll every 10 seconds for real-time badge updates
+    staleTime: 1000 * 5, // 5 seconds for more responsive badge
+    refetchInterval: 1000 * 5, // Poll every 5 seconds for real-time badge updates
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnMount: true, // Refetch when component mounts
   })
 }
 

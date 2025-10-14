@@ -63,7 +63,7 @@ export default function NotificationBell() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
-              className="absolute -top-1 -right-1 h-5 w-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs font-bold"
+              className="absolute top-0 right-0 h-5 w-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs font-bold border-2 border-background shadow-sm"
             >
               {unreadCount > 99 ? '99+' : unreadCount}
             </motion.div>
@@ -72,7 +72,7 @@ export default function NotificationBell() {
 
         {/* Loading Indicator */}
         {isLoading && (
-          <div className="absolute -top-1 -right-1">
+          <div className="absolute top-0 right-0">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
           </div>
         )}

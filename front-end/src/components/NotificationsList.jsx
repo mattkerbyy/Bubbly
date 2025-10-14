@@ -1,9 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, BellOff, CheckCheck, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import NotificationItem from './NotificationItem'
 import {
   useInfiniteNotifications,
@@ -13,6 +23,7 @@ import {
 
 export default function NotificationsList({ onClose }) {
   const observerTarget = useRef(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const {
     data,
@@ -111,11 +122,7 @@ export default function NotificationsList({ onClose }) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              if (window.confirm('Are you sure you want to delete all notifications?')) {
-                deleteAllMutation.mutate()
-              }
-            }}
+            onClick={() => setShowDeleteDialog(true)}
             disabled={deleteAllMutation.isPending}
             className="flex-1 text-xs text-destructive hover:text-destructive"
           >
@@ -152,6 +159,30 @@ export default function NotificationsList({ onClose }) {
           </div>
         )}
       </div>
+
+      {/* Delete All Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all notifications?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. All your notifications will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                deleteAllMutation.mutate()
+                setShowDeleteDialog(false)
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete all
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
