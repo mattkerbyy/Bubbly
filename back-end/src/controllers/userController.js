@@ -181,7 +181,7 @@ export const uploadAvatar = async (req, res) => {
         const oldAvatarPath = path.join(__dirname, '../..', user.avatar)
         await fs.unlink(oldAvatarPath)
       } catch (error) {
-        console.log('Could not delete old avatar:', error.message)
+        // Silently fail if old avatar cannot be deleted
       }
     }
 
@@ -245,7 +245,7 @@ export const uploadCover = async (req, res) => {
         const oldCoverPath = path.join(__dirname, '../..', user.coverPhoto)
         await fs.unlink(oldCoverPath)
       } catch (error) {
-        console.log('Could not delete old cover photo:', error.message)
+        // Silently fail if old cover photo cannot be deleted
       }
     }
 
@@ -385,7 +385,7 @@ export const deleteAvatar = async (req, res) => {
         const avatarPath = path.join(__dirname, '../..', user.avatar)
         await fs.unlink(avatarPath)
       } catch (error) {
-        console.log('Could not delete avatar file:', error.message)
+        // Silently fail if avatar file cannot be deleted
       }
     }
 
@@ -441,7 +441,7 @@ export const deleteCover = async (req, res) => {
         const coverPath = path.join(__dirname, '../..', user.coverPhoto)
         await fs.unlink(coverPath)
       } catch (error) {
-        console.log('Could not delete cover photo file:', error.message)
+        // Silently fail if cover photo file cannot be deleted
       }
     }
 

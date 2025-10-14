@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Heart, MessageCircle, Share2, MoreHorizontal, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Edit, FileText, Music, Video as VideoIcon, Image as ImageIcon, ExternalLink } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
@@ -30,6 +30,10 @@ import {
 } from '@/components/ui/alert-dialog'
 import CommentList from '@/components/CommentList'
 import CommentInput from '@/components/CommentInput'
+import EditPostModal from '@/components/EditPostModal'
+import LikesModal from '@/components/LikesModal'
+import LikesList from '@/components/LikesList'
+import { PostSkeleton } from '@/components/skeletons/PostSkeleton'
 import api from '@/lib/api'
 
 const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -47,6 +51,8 @@ export default function PostDetailPage() {
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showLikesModal, setShowLikesModal] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
@@ -96,6 +102,37 @@ export default function PostDetailPage() {
     return `${API_URL}${imagePath}`
   }
 
+  const getFileType = (filename) => {
+    if (!filename) return null
+    const ext = filename.split('.').pop()?.toLowerCase()
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) {
+      return 'image'
+    } else if (['mp4', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'webm'].includes(ext)) {
+      return 'video'
+    } else if (['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext)) {
+      return 'audio'
+    } else if (['pdf', 'doc', 'docx', 'txt', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext)) {
+      return 'document'
+    }
+    return 'file'
+  }
+
+  const getFileIcon = (type) => {
+    switch (type) {
+      case 'image':
+        return <ImageIcon className="h-8 w-8" />
+      case 'video':
+        return <VideoIcon className="h-8 w-8" />
+      case 'audio':
+        return <Music className="h-8 w-8" />
+      case 'document':
+        return <FileText className="h-8 w-8" />
+      default:
+        return <FileText className="h-8 w-8" />
+    }
+  }
+
   const formatDate = (date) => {
     return formatDistanceToNow(new Date(date), { addSuffix: true })
   }
@@ -131,8 +168,26 @@ export default function PostDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <div className="sticky top-0 z-40 w-full border-b bg-card shadow-sm">
+          <div className="container max-w-3xl mx-auto px-4">
+            <div className="flex h-16 items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(-1)}
+                className="rounded-full"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="font-bold text-lg">Post</h1>
+            </div>
+          </div>
+        </div>
+        
+        <div className="container max-w-3xl mx-auto px-4 py-6">
+          <PostSkeleton />
+        </div>
       </div>
     )
   }
@@ -228,13 +283,20 @@ export default function PostDetailPage() {
                 </div>
 
                 {isOwnPost && (
-                  <DropdownMenu>
+                  <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => setShowEditModal(true)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit post
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive cursor-pointer"
                         onClick={() => setShowDeleteDialog(true)}
@@ -255,27 +317,122 @@ export default function PostDetailPage() {
                   </p>
                 )}
 
-                {/* Image */}
-                {post.image && !imageError && (
-                  <div className="rounded-lg overflow-hidden border border-border">
-                    <img
-                      src={getImageUrl(post.image)}
-                      alt="Post image"
-                      className="w-full max-h-[600px] object-cover"
-                      loading="lazy"
-                      onError={() => setImageError(true)}
-                    />
+                {/* File Display - Supporting images, videos, audio, and documents */}
+                {post.files && post.files.length > 0 && (
+                  <div className={post.files.length > 1 ? "space-y-3" : ""}>
+                    {post.files.map((filePath, index) => {
+                      const fileType = getFileType(filePath)
+                      const fileUrl = getImageUrl(filePath)
+                      const fileName = filePath.split('/').pop()
+                      // Extract original filename by removing timestamp-random suffix
+                      const originalFileName = fileName.replace(/-\d+-\d+(\.[^.]+)$/, '$1')
+
+                      if (fileType === 'image') {
+                        return (
+                          <div key={index} className="rounded-lg overflow-hidden border border-border">
+                            <img
+                              src={fileUrl}
+                              alt={`Post image ${index + 1}`}
+                              className="w-full max-h-[600px] object-contain bg-muted"
+                              loading="lazy"
+                              onError={() => setImageError(true)}
+                            />
+                          </div>
+                        )
+                      } else if (fileType === 'video') {
+                        return (
+                          <div key={index} className="rounded-lg overflow-hidden border border-border bg-black">
+                            <video
+                              src={fileUrl}
+                              controls
+                              className="w-full max-h-[600px]"
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        )
+                      } else if (fileType === 'audio') {
+                        return (
+                          <div key={index} className="rounded-lg border border-border p-4 bg-muted">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="text-primary">
+                                {getFileIcon(fileType, filePath)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">
+                                  {originalFileName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">Audio file</p>
+                              </div>
+                            </div>
+                            <audio
+                              src={fileUrl}
+                              controls
+                              className="w-full"
+                            >
+                              Your browser does not support the audio tag.
+                            </audio>
+                          </div>
+                        )
+                      } else {
+                        // Document or unknown file type
+                        return (
+                          <a
+                            key={index}
+                            href={fileUrl}
+                            download={originalFileName}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block rounded-lg border border-border p-4 bg-muted hover:bg-muted/80 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="text-primary">
+                                {getFileIcon(fileType, filePath)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">
+                                  {originalFileName}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Click to download
+                                </p>
+                              </div>
+                              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </a>
+                        )
+                      }
+                    })}
                   </div>
                 )}
 
-                {/* Actions */}
-                <div className="flex items-center gap-6 pt-2 border-t border-border">
+                {/* Engagement stats - Facebook style */}
+                {(likeCount > 0 || comments.length > 0) && (
+                  <div className="flex items-center justify-between pt-3 pb-2">
+                    {/* Likes with avatars */}
+                    <LikesList
+                      postId={post.id}
+                      likeCount={likeCount}
+                      onViewAll={() => setShowLikesModal(true)}
+                    />
+                    
+                    {/* Comments count */}
+                    {comments.length > 0 && (
+                      <div className="text-sm text-muted-foreground">
+                        {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-around pt-2 border-t border-border">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleLike}
                     disabled={toggleLikeMutation.isPending}
-                    className={`gap-2 transition-colors ${
+                    className={`flex-1 gap-2 transition-colors ${
                       isLiked
                         ? 'text-red-500 hover:text-red-600'
                         : 'text-muted-foreground hover:text-primary'
@@ -289,16 +446,25 @@ export default function PostDetailPage() {
                     >
                       <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
                     </motion.div>
-                    <span className="text-sm font-medium">{likeCount}</span>
+                    <span className="font-medium">Like</span>
                   </Button>
 
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 gap-2 text-muted-foreground hover:text-primary"
+                  >
                     <MessageCircle className="h-5 w-5" />
-                    <span className="text-sm font-medium">{comments.length}</span>
-                  </div>
+                    <span className="font-medium">Comment</span>
+                  </Button>
 
-                  <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-primary">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1 gap-2 text-muted-foreground hover:text-primary"
+                  >
                     <Share2 className="h-5 w-5" />
+                    <span className="font-medium">Share</span>
                   </Button>
                 </div>
               </div>
@@ -346,6 +512,20 @@ export default function PostDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit post modal */}
+      <EditPostModal
+        post={post}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+      />
+
+      {/* Likes modal */}
+      <LikesModal
+        postId={post?.id}
+        isOpen={showLikesModal}
+        onClose={() => setShowLikesModal(false)}
+      />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import express from 'express'
-import { toggleLike, getPostLikes, checkUserLiked } from '../controllers/likeController.js'
+import { toggleLike, getPostLikes, checkUserLiked, getUserLikedPosts } from '../controllers/likeController.js'
 import { authenticate } from '../middleware/auth.js'
 
 const router = express.Router()
@@ -15,5 +15,8 @@ router.get('/posts/:postId', getPostLikes)
 
 // Check if current user liked a post
 router.get('/posts/:postId/check', checkUserLiked)
+
+// Get posts liked by a user
+router.get('/user/:userId/liked', getUserLikedPosts)
 
 export default router

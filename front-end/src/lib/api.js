@@ -21,6 +21,13 @@ api.interceptors.request.use((config) => {
       console.error('Error parsing auth data:', error);
     }
   }
+  
+  // If sending FormData, remove Content-Type to let browser set it automatically
+  // (browser will add multipart/form-data with boundary)
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+  
   return config;
 });
 

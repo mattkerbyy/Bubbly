@@ -22,15 +22,18 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useDeleteComment } from '@/hooks/useComments'
+import CommentSkeleton from '@/components/skeletons/CommentSkeleton'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '')
 
-function CommentItem({ comment, onEdit }) {
+function CommentItem({ comment, onEdit, postOwnerId }) {
   const { user } = useAuthStore()
   const deleteCommentMutation = useDeleteComment()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const isOwnComment = user?.id === comment.user.id
+  const isPostOwner = user?.id === postOwnerId
+  const canDelete = isOwnComment || isPostOwner
 
   const getInitials = (name) => {
     if (!name) return 'U'
@@ -87,7 +90,7 @@ function CommentItem({ comment, onEdit }) {
               <p className="font-semibold text-sm text-foreground">
                 {comment.user?.name || 'Unknown User'}
               </p>
-              {isOwnComment && (
+              {canDelete && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -99,13 +102,15 @@ function CommentItem({ comment, onEdit }) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="z-[10003]">
-                    <DropdownMenuItem
-                      onClick={() => onEdit?.(comment)}
-                      className="cursor-pointer"
-                    >
-                      <Edit2 className="mr-2 h-3 w-3" />
-                      Edit
-                    </DropdownMenuItem>
+                    {isOwnComment && (
+                      <DropdownMenuItem
+                        onClick={() => onEdit?.(comment)}
+                        className="cursor-pointer"
+                      >
+                        <Edit2 className="mr-2 h-3 w-3" />
+                        Edit
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive cursor-pointer"
                       onClick={() => setShowDeleteDialog(true)}
@@ -152,17 +157,12 @@ function CommentItem({ comment, onEdit }) {
   )
 }
 
-export default function CommentList({ comments, onEdit, isLoading }) {
+export default function CommentList({ comments, onEdit, isLoading, postOwnerId }) {
   if (isLoading) {
     return (
       <div className="space-y-3">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="flex gap-2 animate-pulse">
-            <div className="h-8 w-8 rounded-full bg-muted flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-16 bg-muted rounded-2xl" />
-            </div>
-          </div>
+          <CommentSkeleton key={i} />
         ))}
       </div>
     )
@@ -181,7 +181,12 @@ export default function CommentList({ comments, onEdit, isLoading }) {
     <div className="space-y-3">
       <AnimatePresence mode="popLayout">
         {comments.map((comment) => (
-          <CommentItem key={comment.id} comment={comment} onEdit={onEdit} />
+          <CommentItem 
+            key={comment.id} 
+            comment={comment} 
+            onEdit={onEdit} 
+            postOwnerId={postOwnerId}
+          />
         ))}
       </AnimatePresence>
     </div>

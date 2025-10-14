@@ -20,8 +20,17 @@ export const checkUserLiked = async (postId) => {
   return response.data.data // Extract data from { success, data } structure
 }
 
+// Get posts liked by a user
+export const getUserLikedPosts = async (userId, page = 1, limit = 10) => {
+  const response = await api.get(`/likes/user/${userId}/liked`, {
+    params: { page, limit },
+  })
+  return response.data // Extract { success, data, pagination } structure
+}
+
 export default {
   toggleLike,
   getPostLikes,
   checkUserLiked,
+  getUserLikedPosts,
 }

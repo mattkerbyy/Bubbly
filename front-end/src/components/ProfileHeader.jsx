@@ -164,7 +164,7 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, on
             animate={{ opacity: coverHover || showCoverMenu ? 1 : 0 }}
             className="absolute inset-0 bg-black/40 flex items-center justify-center"
           >
-            <DropdownMenu open={showCoverMenu} onOpenChange={setShowCoverMenu}>
+            <DropdownMenu modal={false} open={showCoverMenu} onOpenChange={setShowCoverMenu}>
               <DropdownMenuTrigger asChild>
                 <Button
                   size="lg"
@@ -217,7 +217,7 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, on
           {/* Avatar - NO NEGATIVE MARGIN */}
           <div className="relative flex-shrink-0">
             {isOwnProfile ? (
-              <DropdownMenu open={showAvatarMenu} onOpenChange={setShowAvatarMenu}>
+              <DropdownMenu modal={false} open={showAvatarMenu} onOpenChange={setShowAvatarMenu}>
                 <DropdownMenuTrigger asChild>
                   <div
                     className="relative cursor-pointer group"

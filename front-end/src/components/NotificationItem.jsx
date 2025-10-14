@@ -146,11 +146,12 @@ export default function NotificationItem({ notification, onClose }) {
       <Button
         variant="ghost"
         size="icon"
-        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-2 right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive/15 hover:text-destructive hover:rotate-90 duration-300"
         onClick={handleDelete}
         disabled={deleteNotificationMutation.isPending}
+        title="Remove notification"
       >
-        <X className="h-4 w-4" />
+        <X className="h-3.5 w-3.5 stroke-[2.5]" />
       </Button>
 
       {/* Post Image Preview (for likes and comments) */}

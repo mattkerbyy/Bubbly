@@ -19,7 +19,7 @@ router.use(authenticate)
 router
   .route('/')
   .get(getAllPosts)
-  .post(uploadPostImage.single('image'), createPost)
+  .post(uploadPostImage.array('files', 10), createPost) // Support up to 10 files
 
 // Get posts by specific user
 router.get('/user/:userId', getUserPosts)
@@ -28,7 +28,7 @@ router.get('/user/:userId', getUserPosts)
 router
   .route('/:id')
   .get(getPostById)
-  .put(updatePost)
+  .put(uploadPostImage.array('files', 10), updatePost) // Support up to 10 files
   .delete(deletePost)
 
 export default router

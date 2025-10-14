@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { toggleLike, getPostLikes, checkUserLiked } from '@/services/likeService'
+import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import { toggleLike, getPostLikes, checkUserLiked, getUserLikedPosts } from '@/services/likeService'
 import { toast } from 'sonner'
 
 // Hook to toggle like on a post
@@ -114,5 +114,19 @@ export const useCheckUserLiked = (postId, options = {}) => {
     queryFn: () => checkUserLiked(postId),
     enabled: !!postId,
     ...options,
+  })
+}
+
+// Hook to get posts liked by a user with infinite scroll
+export const useUserLikedPosts = (userId) => {
+  return useInfiniteQuery({
+    queryKey: ['likedPosts', userId],
+    queryFn: ({ pageParam = 1 }) => getUserLikedPosts(userId, pageParam, 10),
+    getNextPageParam: (lastPage) => {
+      return lastPage.pagination.hasMore 
+        ? lastPage.pagination.currentPage + 1 
+        : undefined
+    },
+    enabled: !!userId,
   })
 }

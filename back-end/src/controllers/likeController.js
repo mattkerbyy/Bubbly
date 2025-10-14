@@ -98,6 +98,7 @@ export const getPostLikes = async (req, res) => {
   try {
     const { postId } = req.params
     const { page = 1, limit = 20 } = req.query
+    const currentUserId = req.user?.id
 
     const skip = (parseInt(page) - 1) * parseInt(limit)
 
@@ -134,6 +135,30 @@ export const getPostLikes = async (req, res) => {
       },
     })
 
+    // Add isFollowing status for each user
+    const likesWithFollowStatus = await Promise.all(
+      likes.map(async (like) => {
+        const isFollowing = currentUserId
+          ? await prisma.follower.findUnique({
+              where: {
+                followerId_followingId: {
+                  followerId: currentUserId,
+                  followingId: like.user.id,
+                },
+              },
+            })
+          : null
+
+        return {
+          ...like,
+          user: {
+            ...like.user,
+            isFollowing: !!isFollowing,
+          },
+        }
+      })
+    )
+
     // Get total count
     const totalLikes = await prisma.like.count({
       where: { postId },
@@ -142,7 +167,7 @@ export const getPostLikes = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        likes,
+        likes: likesWithFollowStatus,
         totalLikes,
         currentPage: parseInt(page),
         totalPages: Math.ceil(totalLikes / parseInt(limit)),
@@ -184,6 +209,81 @@ export const checkUserLiked = async (req, res) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to check like status',
+    })
+  }
+}
+
+// Get posts liked by a user
+export const getUserLikedPosts = async (req, res) => {
+  try {
+    const { userId } = req.params
+    const currentUserId = req.user.id
+    const { page = 1, limit = 10 } = req.query
+
+    const skip = (parseInt(page) - 1) * parseInt(limit)
+
+    // Get liked posts
+    const likedPosts = await prisma.like.findMany({
+      where: { userId },
+      skip,
+      take: parseInt(limit),
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        post: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                username: true,
+                avatar: true,
+                verified: true,
+              },
+            },
+            _count: {
+              select: {
+                likes: true,
+                comments: true,
+              },
+            },
+            likes: {
+              where: { userId: currentUserId },
+              select: { id: true },
+            },
+          },
+        },
+      },
+    })
+
+    // Format the response
+    const posts = likedPosts.map((like) => ({
+      ...like.post,
+      isLiked: like.post.likes.length > 0,
+      likes: undefined, // Remove the likes array used for checking
+    }))
+
+    // Get total count
+    const totalLikes = await prisma.like.count({
+      where: { userId },
+    })
+
+    return res.status(200).json({
+      success: true,
+      data: posts,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(totalLikes / parseInt(limit)),
+        total: totalLikes,
+        hasMore: skip + likedPosts.length < totalLikes,
+      },
+    })
+  } catch (error) {
+    console.error('Error getting user liked posts:', error)
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to get liked posts',
     })
   }
 }

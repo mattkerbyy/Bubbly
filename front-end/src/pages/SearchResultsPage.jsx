@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator'
 import UserCard from '@/components/UserCard'
 import Post from '@/components/Post'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SearchResultsSkeleton } from '@/components/skeletons/SearchSkeleton'
 import { useSearchUsers, useSearchPosts } from '@/hooks/useSearch'
 import { cn } from '@/lib/utils'
 
@@ -180,21 +181,10 @@ export default function SearchResultsPage() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="p-6 border border-border rounded-lg">
-                <div className="flex items-start gap-4">
-                  <Skeleton className="h-16 w-16 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-3 w-1/4" />
-                    <Skeleton className="h-3 w-full" />
-                    <Skeleton className="h-3 w-2/3" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <SearchResultsSkeleton 
+            count={5} 
+            type={activeTab === 'posts' ? 'posts' : 'users'} 
+          />
         )}
 
         {/* No Results */}

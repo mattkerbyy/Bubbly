@@ -21,6 +21,13 @@ export const postService = {
 
   // Create new post
   createPost: async (postData) => {
+    // If postData is already FormData, use it directly
+    if (postData instanceof FormData) {
+      const { data } = await api.post('/posts', postData)
+      return data
+    }
+    
+    // Otherwise, create FormData from object (for backward compatibility)
     const formData = new FormData()
     formData.append('content', postData.content)
     

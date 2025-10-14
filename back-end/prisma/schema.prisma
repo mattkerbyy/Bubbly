@@ -39,8 +39,9 @@ model User {
 
 model Post {
   id        String   @id @default(cuid())
-  content   String
-  image     String?
+  content   String?
+  file      String?        // Single file path (backward compatibility)
+  files     String[] @default([])  // Array of all file paths
   userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

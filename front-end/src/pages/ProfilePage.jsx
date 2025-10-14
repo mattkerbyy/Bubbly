@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Grid3x3, Bookmark, Heart, X } from 'lucide-react'
+import { ArrowLeft, Grid3x3, Heart, X } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUsers'
 import { useAuthStore } from '@/stores/useAuthStore'
 import ProfileHeader from '@/components/ProfileHeader'
 import ProfilePosts from '@/components/ProfilePosts'
+import ProfileLikedPosts from '@/components/ProfileLikedPosts'
 import EditProfileModal from '@/components/EditProfileModal'
 import FollowersList from '@/components/FollowersList'
 import FollowingList from '@/components/FollowingList'
@@ -65,7 +66,6 @@ export default function ProfilePage() {
   const tabs = [
     { id: 'posts', label: 'Posts', icon: Grid3x3 },
     { id: 'likes', label: 'Likes', icon: Heart },
-    { id: 'saved', label: 'Saved', icon: Bookmark },
   ]
 
   return (
@@ -142,25 +142,7 @@ export default function ProfilePage() {
           >
             {activeTab === 'posts' && <ProfilePosts username={username} />}
             
-            {activeTab === 'likes' && (
-              <div className="bg-card border border-border rounded-lg p-12 text-center">
-                <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
-                <h3 className="text-lg font-semibold mb-2">Liked Posts</h3>
-                <p className="text-muted-foreground">
-                  This feature is coming soon!
-                </p>
-              </div>
-            )}
-            
-            {activeTab === 'saved' && (
-              <div className="bg-card border border-border rounded-lg p-12 text-center">
-                <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
-                <h3 className="text-lg font-semibold mb-2">Saved Posts</h3>
-                <p className="text-muted-foreground">
-                  This feature is coming soon!
-                </p>
-              </div>
-            )}
+            {activeTab === 'likes' && <ProfileLikedPosts userId={profile?.id} />}
           </motion.div>
         </motion.div>
       </div>

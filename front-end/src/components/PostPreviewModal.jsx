@@ -1,21 +1,27 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { X, Heart, MessageCircle, Share2, MoreHorizontal, ExternalLink, Trash2 } from 'lucide-react'
+import { X, Heart, MessageCircle, Share2, MoreHorizontal, ExternalLink, Trash2, Eye, Edit, FileText, Music, Video as VideoIcon, Image as ImageIcon } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useDeletePost } from '@/hooks/usePosts'
 import { useToggleLike } from '@/hooks/useLikes'
 import { usePostComments } from '@/hooks/useComments'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import CommentList from '@/components/CommentList'
 import CommentInput from '@/components/CommentInput'
+import EditPostModal from '@/components/EditPostModal'
+import LikesModal from '@/components/LikesModal'
+import LikesList from '@/components/LikesList'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
@@ -32,9 +38,12 @@ const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replac
 
 export default function PostPreviewModal({ isOpen, post, onClose }) {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
   const deletePostMutation = useDeletePost()
   const toggleLikeMutation = useToggleLike()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showLikesModal, setShowLikesModal] = useState(false)
   const [isLiked, setIsLiked] = useState(post?.isLiked || false)
   const [likeCount, setLikeCount] = useState(post?._count?.likes || 0)
   const [editingComment, setEditingComment] = useState(null)
@@ -141,6 +150,37 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
     return `${API_URL}${imagePath}`
   }
 
+  const getFileType = (filename) => {
+    if (!filename) return null
+    const ext = filename.split('.').pop()?.toLowerCase()
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) {
+      return 'image'
+    } else if (['mp4', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'webm'].includes(ext)) {
+      return 'video'
+    } else if (['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext)) {
+      return 'audio'
+    } else if (['pdf', 'doc', 'docx', 'txt', 'ppt', 'pptx', 'xls', 'xlsx'].includes(ext)) {
+      return 'document'
+    }
+    return 'file'
+  }
+
+  const getFileIcon = (type) => {
+    switch (type) {
+      case 'image':
+        return <ImageIcon className="h-8 w-8" />
+      case 'video':
+        return <VideoIcon className="h-8 w-8" />
+      case 'audio':
+        return <Music className="h-8 w-8" />
+      case 'document':
+        return <FileText className="h-8 w-8" />
+      default:
+        return <FileText className="h-8 w-8" />
+    }
+  }
+
   const renderContent = (content) => {
     if (!content) return null
     
@@ -217,14 +257,32 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
               </div>
 
               <div className="flex items-center gap-2">
-                {isOwnPost && (
-                  <DropdownMenu>
+                {isOwnPost ? (
+                  <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="z-[10001]">
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => {
+                          navigate(`/post/${post.id}`)
+                          onClose()
+                        }}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        View post
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => setShowEditModal(true)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit post
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive cursor-pointer"
                         onClick={() => setShowDeleteDialog(true)}
@@ -234,62 +292,158 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
+                ) : (
+                  <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="z-[10001]">
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => {
+                          navigate(`/post/${post.id}`)
+                          onClose()
+                        }}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        View post
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={onClose}
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  className="h-8 w-8 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all hover:rotate-90 duration-300"
                   title="Close (Esc)"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4 stroke-[2.5]" />
                 </Button>
               </div>
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto px-4">
               {/* Post Content */}
               {post.content && (
-                <div className="p-4">
+                <div className="py-4">
                   <p className="text-foreground whitespace-pre-wrap break-words leading-relaxed">
                     {renderContent(post.content)}
                   </p>
                 </div>
               )}
 
-              {/* Image */}
-              {post.image && (
-                <div className="w-full">
-                  <img
-                    src={getImageUrl(post.image)}
-                    alt="Post image"
-                    className="w-full object-contain max-h-[500px]"
-                    loading="lazy"
-                  />
+              {/* File Display - Supporting images, videos, audio, and documents */}
+              {post.files && post.files.length > 0 && (
+                <div className={post.files.length > 1 ? "space-y-2" : ""}>
+                  {post.files.map((filePath, index) => {
+                    const fileType = getFileType(filePath)
+                    const fileUrl = getImageUrl(filePath)
+                    const fileName = filePath.split('/').pop()
+                    // Extract original filename by removing timestamp-random suffix
+                    const originalFileName = fileName.replace(/-\d+-\d+(\.[^.]+)$/, '$1')
+
+                    if (fileType === 'image') {
+                      return (
+                        <div key={index} className="w-full">
+                          <img
+                            src={fileUrl}
+                            alt={`Post image ${index + 1}`}
+                            className="w-full object-contain max-h-[600px] bg-muted"
+                            loading="lazy"
+                          />
+                        </div>
+                      )
+                    } else if (fileType === 'video') {
+                      return (
+                        <div key={index} className="w-full bg-black">
+                          <video
+                            src={fileUrl}
+                            controls
+                            className="w-full max-h-[600px]"
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        </div>
+                      )
+                    } else if (fileType === 'audio') {
+                      return (
+                        <div key={index} className="rounded-lg border border-border p-4 bg-muted">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="text-primary">
+                              <Music className="h-8 w-8" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">
+                                {originalFileName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">Audio file</p>
+                            </div>
+                          </div>
+                          <audio
+                            src={fileUrl}
+                            controls
+                            className="w-full"
+                          >
+                            Your browser does not support the audio tag.
+                          </audio>
+                        </div>
+                      )
+                    } else {
+                      // Document or other file types
+                      return (
+                        <a
+                          key={index}
+                          href={fileUrl}
+                          download={originalFileName}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block rounded-lg border border-border p-4 bg-muted hover:bg-muted/80 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="text-primary">
+                              <FileText className="h-8 w-8" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">
+                                {originalFileName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Click to download
+                              </p>
+                            </div>
+                            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </a>
+                      )
+                    }
+                  })}
                 </div>
               )}
 
-              {/* Engagement Stats */}
-              <div className="px-4 py-3">
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <div className="flex -space-x-1">
-                      <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center border-2 border-background">
-                        <Heart className="h-3 w-3 text-white fill-white" />
+              {/* Engagement Stats - Facebook style */}
+              {(likeCount > 0 || comments.length > 0) && (
+                <div className="px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    {/* Likes with avatars */}
+                    <LikesList
+                      postId={post.id}
+                      likeCount={likeCount}
+                      onViewAll={() => setShowLikesModal(true)}
+                    />
+                    
+                    {/* Comments count */}
+                    {comments.length > 0 && (
+                      <div className="text-sm text-muted-foreground">
+                        {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
                       </div>
-                    </div>
-                    <span className="ml-1 hover:underline cursor-pointer">
-                      {likeCount}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="hover:underline cursor-pointer">
-                      {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-                    </span>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
 
               <Separator />
 
@@ -344,6 +498,7 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
                   comments={comments}
                   onEdit={handleEditComment}
                   isLoading={commentsLoading}
+                  postOwnerId={post.user.id}
                 />
 
                 {/* Comment Input */}
@@ -379,6 +534,20 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
           </AlertDialog>
         </motion.div>
       )}
+
+      {/* Edit post modal */}
+      <EditPostModal
+        post={post}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+      />
+
+      {/* Likes modal - render outside modal for proper z-index */}
+      <LikesModal
+        postId={post?.id}
+        isOpen={showLikesModal}
+        onClose={() => setShowLikesModal(false)}
+      />
     </AnimatePresence>
   )
 }

@@ -126,9 +126,10 @@ export default function SearchBar({ className }) {
             variant="ghost"
             size="sm"
             onClick={handleClearSearch}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-secondary rounded-full"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full transition-all hover:rotate-90 duration-300"
+            title="Clear search"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3.5 w-3.5 stroke-[2.5]" />
           </Button>
         )}
         {isLoading && (

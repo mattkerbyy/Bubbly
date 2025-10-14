@@ -10,22 +10,31 @@ export const createPost = async (req, res) => {
     const { content } = req.body
     const userId = req.user.id
 
-    // Validate content
-    if (!content || content.trim().length === 0) {
+    // Validate: must have either content or files
+    if ((!content || content.trim().length === 0) && !req.files && !req.file) {
       return res.status(400).json({
         success: false,
-        error: 'Post content is required'
+        error: 'Post must have content or at least one file'
       })
     }
 
-    // Get image path if uploaded
-    const image = req.file ? `/uploads/posts/${req.file.filename}` : null
+    // Get file paths if uploaded (support both single and multiple files)
+    let uploadedFiles = []
+    if (req.files && req.files.length > 0) {
+      uploadedFiles = req.files.map(file => `/uploads/posts/${file.filename}`)
+    } else if (req.file) {
+      uploadedFiles = [`/uploads/posts/${req.file.filename}`]
+    }
+
+    // Store all files in files array, and first one in file field (backward compatibility)
+    const file = uploadedFiles.length > 0 ? uploadedFiles[0] : null
 
     // Create post
     const post = await prisma.post.create({
       data: {
-        content: content.trim(),
-        image,
+        content: content?.trim() || null,
+        file,
+        files: uploadedFiles, // Store all files in array
         userId
       },
       include: {
@@ -241,8 +250,16 @@ export const getPostById = async (req, res) => {
 export const updatePost = async (req, res) => {
   try {
     const { id } = req.params
-    const { content } = req.body
+    const { content, removeFiles, keepFiles } = req.body
     const userId = req.user.id
+    
+    // Get file paths if uploaded (support both single and multiple files)
+    let newFiles = []
+    if (req.files && req.files.length > 0) {
+      newFiles = req.files.map(file => `/uploads/posts/${file.filename}`)
+    } else if (req.file) {
+      newFiles = [`/uploads/posts/${req.file.filename}`]
+    }
 
     // Check if post exists and belongs to user
     const existingPost = await prisma.post.findUnique({
@@ -263,19 +280,48 @@ export const updatePost = async (req, res) => {
       })
     }
 
+    // Prepare update data
+    const updateData = {}
+    
+    if (content !== undefined) {
+      updateData.content = content.trim() || null
+    }
+    
+    // Handle files update/removal
+    if (removeFiles === 'true') {
+      // Remove all files
+      updateData.files = []
+      updateData.file = null
+    } else if (newFiles.length > 0 || keepFiles) {
+      // Merge kept files with new files
+      let keptFiles = []
+      if (keepFiles) {
+        try {
+          keptFiles = JSON.parse(keepFiles)
+        } catch (e) {
+          console.error('Error parsing keepFiles:', e)
+        }
+      }
+      
+      // Combine kept files and new files
+      const allFiles = [...keptFiles, ...newFiles]
+      updateData.files = allFiles
+      updateData.file = allFiles[0] || null // First file for backward compatibility
+    }
+    // If neither new files nor remove flag, keep existing files
+
     // Update post
     const updatedPost = await prisma.post.update({
       where: { id },
-      data: {
-        content: content.trim()
-      },
+      data: updateData,
       include: {
         user: {
           select: {
             id: true,
             name: true,
             username: true,
-            avatar: true
+            avatar: true,
+            verified: true
           }
         },
         _count: {
@@ -283,13 +329,28 @@ export const updatePost = async (req, res) => {
             likes: true,
             comments: true
           }
+        },
+        likes: {
+          where: {
+            userId
+          },
+          select: {
+            id: true
+          }
         }
       }
     })
 
+    // Add isLiked field
+    const postWithLikeStatus = {
+      ...updatedPost,
+      isLiked: updatedPost.likes.length > 0,
+      likes: undefined
+    }
+
     res.status(200).json({
       success: true,
-      data: updatedPost
+      data: postWithLikeStatus
     })
   } catch (error) {
     console.error('Update post error:', error)

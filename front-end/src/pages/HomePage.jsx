@@ -3,9 +3,24 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { LogOut, Home, User, MessageCircle, Bell, Users, Bookmark } from 'lucide-react'
+import { Home, User, MessageCircle, Users, LogOut } from 'lucide-react'
+import { useSuggestedUsers } from '@/hooks/useFollow'
+import { useFollowUser } from '@/hooks/useFollow'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { useState } from 'react'
 import ThemeToggle from '@/components/ThemeToggle'
 import NotificationBell from '@/components/NotificationBell'
+import { Skeleton } from '@/components/ui/skeleton'
+import HamburgerMenu from '@/components/HamburgerMenu'
 import SearchBar from '@/components/SearchBar'
 import CreatePost from '@/components/CreatePost'
 import Feed from '@/components/Feed'
@@ -17,10 +32,21 @@ const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
 export default function HomePage() {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const { data: suggestedUsersData, isLoading: loadingSuggested } = useSuggestedUsers(3)
+  const followMutation = useFollowUser()
 
   const handleLogout = () => {
     logout()
     navigate('/login')
+  }
+
+  const handleFollow = async (userId) => {
+    try {
+      await followMutation.mutateAsync(userId)
+    } catch (error) {
+      console.error('Error following user:', error)
+    }
   }
 
   const getInitials = (name) => {
@@ -42,17 +68,12 @@ export default function HomePage() {
   const sidebarItems = [
     { icon: Home, label: 'Home', active: true, onClick: () => navigate('/home') },
     { icon: User, label: 'Profile', onClick: () => navigate(`/profile/${user?.username}`) },
-    { icon: Users, label: 'Friends' },
+    { icon: Users, label: 'Connections', onClick: () => navigate('/connections') },
     { icon: MessageCircle, label: 'Messages' },
-    { icon: Bell, label: 'Notifications' },
-    { icon: Bookmark, label: 'Saved' },
   ]
 
-  const suggestedUsers = [
-    { id: 1, name: 'Sarah Johnson', username: 'sarahj', avatar: null },
-    { id: 2, name: 'Mike Chen', username: 'mikechen', avatar: null },
-    { id: 3, name: 'Emma Davis', username: 'emmad', avatar: null },
-  ]
+  const suggestedUsers = suggestedUsersData?.data || []
+  const currentYear = new Date().getFullYear()
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,12 +95,15 @@ export default function HomePage() {
               />
             </motion.div>
 
-            {/* Search Bar - Centered */}
+            {/* Search Bar - Centered on desktop, hidden on mobile */}
             <div className="flex-1 hidden md:flex justify-center">
               <div className="w-full max-w-md">
                 <SearchBar />
               </div>
             </div>
+
+            {/* Spacer for mobile - pushes right items to the right */}
+            <div className="flex-1 md:hidden"></div>
 
             {/* Right actions */}
             <motion.div
@@ -87,30 +111,37 @@ export default function HomePage() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-2 flex-shrink-0"
             >
-              <ThemeToggle />
+              {/* Desktop - Theme toggle */}
+              <div className="hidden md:flex items-center gap-2">
+                <ThemeToggle />
+              </div>
               
+              {/* Notification Bell - Always visible */}
               <NotificationBell />
 
-              <div className="flex items-center gap-3 ml-2">
-                <Avatar 
-                  className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => navigate(`/profile/${user?.username}`)}
-                >
-                  <AvatarImage src={getImageUrl(user?.avatar)} />
-                  <AvatarFallback className="bg-primary text-white text-sm">
-                    {getInitials(user?.name)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
+              {/* Profile Avatar - Always visible */}
+              <Avatar 
+                className="h-9 w-9 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => navigate(`/profile/${user?.username}`)}
+              >
+                <AvatarImage src={getImageUrl(user?.avatar)} />
+                <AvatarFallback className="bg-primary text-white text-sm">
+                  {getInitials(user?.name)}
+                </AvatarFallback>
+              </Avatar>
 
+              {/* Logout Button - Desktop only */}
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleLogout}
-                className="text-muted-foreground hover:text-destructive"
+                onClick={() => setShowLogoutDialog(true)}
+                className="hidden md:flex text-muted-foreground hover:text-destructive"
               >
                 <LogOut className="h-5 w-5" />
               </Button>
+
+              {/* Hamburger Menu - Mobile only */}
+              <HamburgerMenu />
             </motion.div>
           </div>
         </div>
@@ -186,24 +217,56 @@ export default function HomePage() {
                 className="bg-card border rounded-lg p-4"
               >
                 <h3 className="font-semibold text-sm mb-4">Suggested for you</h3>
-                <div className="space-y-4">
-                  {suggestedUsers.map((suggestedUser) => (
-                    <div key={suggestedUser.id} className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-muted text-muted-foreground">
-                          {getInitials(suggestedUser.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{suggestedUser.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">@{suggestedUser.username}</p>
+                {loadingSuggested ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                        <Skeleton className="h-8 w-16 rounded" />
                       </div>
-                      <Button size="sm" variant="outline" className="text-xs h-8">
-                        Follow
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : suggestedUsers.length > 0 ? (
+                  <div className="space-y-4">
+                    {suggestedUsers.map((suggestedUser) => (
+                      <div key={suggestedUser.id} className="flex items-center gap-3">
+                        <Avatar 
+                          className="h-10 w-10 cursor-pointer"
+                          onClick={() => navigate(`/profile/${suggestedUser.username}`)}
+                        >
+                          <AvatarImage src={getImageUrl(suggestedUser.avatar)} />
+                          <AvatarFallback className="bg-muted text-muted-foreground">
+                            {getInitials(suggestedUser.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div 
+                          className="flex-1 min-w-0 cursor-pointer"
+                          onClick={() => navigate(`/profile/${suggestedUser.username}`)}
+                        >
+                          <p className="text-sm font-medium truncate">{suggestedUser.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">@{suggestedUser.username}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-8"
+                          onClick={() => handleFollow(suggestedUser.id)}
+                          disabled={followMutation.isPending}
+                        >
+                          Follow
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No suggestions available
+                  </p>
+                )}
               </motion.div>
 
               {/* Footer links */}
@@ -220,7 +283,7 @@ export default function HomePage() {
                   <span>•</span>
                   <a href="/privacy" className="hover:underline">Privacy</a>
                 </div>
-                <p>© 2024 Bubbly. All rights reserved.</p>
+                <p>© {currentYear} Bubbly. All rights reserved.</p>
               </motion.div>
             </div>
           </aside>
@@ -230,11 +293,14 @@ export default function HomePage() {
       {/* Mobile bottom nav - Only visible on mobile */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40">
         <div className="flex items-center justify-around h-16 px-2">
-          {sidebarItems.slice(0, 5).map((item) => (
+          {sidebarItems.map((item) => (
             <button
               key={item.label}
-              className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg ${
-                item.active ? 'text-primary' : 'text-muted-foreground'
+              onClick={item.onClick}
+              className={`flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors ${
+                item.active 
+                  ? 'text-primary' 
+                  : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <item.icon className="h-5 w-5" />
@@ -243,6 +309,27 @@ export default function HomePage() {
           ))}
         </div>
       </nav>
+
+      {/* Logout confirmation dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Logout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to logout? You'll need to login again to access your account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleLogout}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

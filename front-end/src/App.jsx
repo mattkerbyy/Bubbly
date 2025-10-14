@@ -14,6 +14,7 @@ import HomePage from '@/pages/HomePage'
 import ProfilePage from '@/pages/ProfilePage'
 import PostDetailPage from '@/pages/PostDetailPage'
 import SearchResultsPage from '@/pages/SearchResultsPage'
+import ConnectionsPage from '@/pages/ConnectionsPage'
 import LearnMorePage from '@/pages/LearnMorePage'
 import PrivacyPage from '@/pages/PrivacyPage'
 import TermsPage from '@/pages/TermsPage'
@@ -97,6 +98,14 @@ function App() {
           element={
             <PrivateRoute>
               <SearchResultsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/connections"
+          element={
+            <PrivateRoute>
+              <ConnectionsPage />
             </PrivateRoute>
           }
         />
