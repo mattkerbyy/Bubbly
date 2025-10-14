@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { LogOut, Home, User, MessageCircle, Bell, Search, Users, Bookmark } from 'lucide-react'
+import { LogOut, Home, User, MessageCircle, Bell, Users, Bookmark } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
 import NotificationBell from '@/components/NotificationBell'
+import SearchBar from '@/components/SearchBar'
 import CreatePost from '@/components/CreatePost'
 import Feed from '@/components/Feed'
 
@@ -58,12 +59,12 @@ export default function HomePage() {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
         <div className="container max-w-7xl mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
+          <div className="flex h-16 items-center gap-4">
             {/* Logo */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 flex-shrink-0"
             >
               <img 
                 src="/images/bubbly-logo-clearbg.png" 
@@ -73,15 +74,10 @@ export default function HomePage() {
               />
             </motion.div>
 
-            {/* Search */}
-            <div className="flex-1 max-w-md mx-4 hidden md:block">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search Bubbly"
-                  className="w-full h-10 pl-10 pr-4 rounded-full bg-muted border-none focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
+            {/* Search Bar - Centered */}
+            <div className="flex-1 hidden md:flex justify-center">
+              <div className="w-full max-w-md">
+                <SearchBar />
               </div>
             </div>
 
@@ -89,7 +85,7 @@ export default function HomePage() {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 flex-shrink-0"
             >
               <ThemeToggle />
               

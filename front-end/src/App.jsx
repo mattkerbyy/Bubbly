@@ -13,6 +13,7 @@ import RegisterPage from '@/pages/RegisterPage'
 import HomePage from '@/pages/HomePage'
 import ProfilePage from '@/pages/ProfilePage'
 import PostDetailPage from '@/pages/PostDetailPage'
+import SearchResultsPage from '@/pages/SearchResultsPage'
 import LearnMorePage from '@/pages/LearnMorePage'
 import PrivacyPage from '@/pages/PrivacyPage'
 import TermsPage from '@/pages/TermsPage'
@@ -88,6 +89,14 @@ function App() {
           element={
             <PrivateRoute>
               <PostDetailPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/search"
+          element={
+            <PrivateRoute>
+              <SearchResultsPage />
             </PrivateRoute>
           }
         />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, forwardRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
@@ -31,7 +31,7 @@ import {
 const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
 
-export default function Post({ post }) {
+const Post = forwardRef(({ post }, ref) => {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const deletePostMutation = useDeletePost()
@@ -130,6 +130,7 @@ export default function Post({ post }) {
   return (
     <>
       <motion.div
+        layout
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95 }}
@@ -295,4 +296,8 @@ export default function Post({ post }) {
       />
     </>
   )
-}
+})
+
+Post.displayName = 'Post'
+
+export default Post
