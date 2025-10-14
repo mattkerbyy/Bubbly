@@ -24,11 +24,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useUploadAvatar, useUploadCover, useDeleteAvatar, useDeleteCover } from '@/hooks/useUsers'
+import { useFollowUser, useUnfollowUser, useFollowStatus } from '@/hooks/useFollow'
 
 const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
 
-export default function ProfileHeader({ profile, isOwnProfile, onEditProfile }) {
+export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, onShowFollowers, onShowFollowing }) {
   const [coverHover, setCoverHover] = useState(false)
   const [avatarHover, setAvatarHover] = useState(false)
   const [showAvatarMenu, setShowAvatarMenu] = useState(false)
@@ -40,6 +41,10 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile }) 
   const uploadCoverMutation = useUploadCover()
   const deleteAvatarMutation = useDeleteAvatar()
   const deleteCoverMutation = useDeleteCover()
+
+  const followMutation = useFollowUser()
+  const unfollowMutation = useUnfollowUser()
+  const { data: followStatusData } = useFollowStatus(profile?.id)
 
   const getInitials = (name) => {
     if (!name) return 'U'
@@ -319,18 +324,24 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile }) 
                 </span>
                 <span className="text-muted-foreground">Posts</span>
               </div>
-              <div className="flex items-center gap-1">
+              <button
+                onClick={onShowFollowers}
+                className="flex items-center gap-1 hover:underline cursor-pointer transition-colors hover:text-primary"
+              >
                 <span className="font-semibold text-foreground">
                   {formatNumber(profile._count?.followers || 0)}
                 </span>
                 <span className="text-muted-foreground">Followers</span>
-              </div>
-              <div className="flex items-center gap-1">
+              </button>
+              <button
+                onClick={onShowFollowing}
+                className="flex items-center gap-1 hover:underline cursor-pointer transition-colors hover:text-primary"
+              >
                 <span className="font-semibold text-foreground">
                   {formatNumber(profile._count?.following || 0)}
                 </span>
                 <span className="text-muted-foreground">Following</span>
-              </div>
+              </button>
             </motion.div>
 
             {/* Additional Info */}
@@ -386,11 +397,19 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile }) 
               </Button>
             ) : (
               <Button
-                variant={profile.isFollowing ? 'outline' : 'default'}
+                variant={followStatusData?.data?.isFollowing ? 'outline' : 'default'}
                 size="sm"
                 className="flex-1 sm:flex-none gap-2"
+                onClick={() => {
+                  if (followStatusData?.data?.isFollowing) {
+                    unfollowMutation.mutate(profile.id)
+                  } else {
+                    followMutation.mutate(profile.id)
+                  }
+                }}
+                disabled={followMutation.isPending || unfollowMutation.isPending}
               >
-                {profile.isFollowing ? (
+                {followStatusData?.data?.isFollowing ? (
                   <>
                     <UserMinus className="h-4 w-4" />
                     <span>Unfollow</span>

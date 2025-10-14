@@ -1,14 +1,22 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Grid3x3, Bookmark, Heart } from 'lucide-react'
+import { ArrowLeft, Grid3x3, Bookmark, Heart, X } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUsers'
 import { useAuthStore } from '@/stores/useAuthStore'
 import ProfileHeader from '@/components/ProfileHeader'
 import ProfilePosts from '@/components/ProfilePosts'
 import EditProfileModal from '@/components/EditProfileModal'
+import FollowersList from '@/components/FollowersList'
+import FollowingList from '@/components/FollowingList'
 import { ProfilePageSkeleton } from '@/components/skeletons/ProfileSkeleton'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 export default function ProfilePage() {
   const { username } = useParams()
@@ -16,6 +24,8 @@ export default function ProfilePage() {
   const { user: currentUser } = useAuthStore()
   const [activeTab, setActiveTab] = useState('posts')
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showFollowersModal, setShowFollowersModal] = useState(false)
+  const [showFollowingModal, setShowFollowingModal] = useState(false)
 
   const {
     data: profileData,
@@ -99,6 +109,8 @@ export default function ProfilePage() {
             profile={profile}
             isOwnProfile={isOwnProfile}
             onEditProfile={() => setShowEditModal(true)}
+            onShowFollowers={() => setShowFollowersModal(true)}
+            onShowFollowing={() => setShowFollowingModal(true)}
           />
 
           {/* Tabs */}
@@ -161,6 +173,30 @@ export default function ProfilePage() {
           profile={profile}
         />
       )}
+
+      {/* Followers Modal */}
+      <Dialog open={showFollowersModal} onOpenChange={setShowFollowersModal}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Followers</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+            <FollowersList userId={profile?.id} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Following Modal */}
+      <Dialog open={showFollowingModal} onOpenChange={setShowFollowingModal}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Following</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+            <FollowingList userId={profile?.id} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

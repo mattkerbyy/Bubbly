@@ -68,12 +68,19 @@ export const getAllPosts = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit)
     const userId = req.user.id
 
-    // Get posts with user info and counts
-    const posts = await prisma.post.findMany({
-      skip,
-      take: parseInt(limit),
+    // Get list of users that current user is following
+    const following = await prisma.follower.findMany({
+      where: { followerId: userId },
+      select: { followingId: true },
+    })
+    const followingIds = following.map((f) => f.followingId)
+
+    // Get posts from followed users first, then other posts
+    // Fetch more posts than needed to ensure we have enough after sorting
+    const allPosts = await prisma.post.findMany({
+      take: parseInt(limit) * 3, // Fetch 3x to have buffer for sorting
       orderBy: {
-        createdAt: 'desc'
+        createdAt: 'desc',
       },
       include: {
         user: {
@@ -81,31 +88,49 @@ export const getAllPosts = async (req, res) => {
             id: true,
             name: true,
             username: true,
-            avatar: true
-          }
+            avatar: true,
+            verified: true,
+          },
         },
         _count: {
           select: {
             likes: true,
-            comments: true
-          }
+            comments: true,
+          },
         },
         likes: {
           where: {
-            userId
+            userId,
           },
           select: {
-            id: true
-          }
-        }
-      }
+            id: true,
+          },
+        },
+      },
     })
 
+    // Sort posts: followed users' posts first, then others
+    const sortedPosts = allPosts.sort((a, b) => {
+      const aIsFollowed = followingIds.includes(a.userId)
+      const bIsFollowed = followingIds.includes(b.userId)
+
+      // If both are followed or both are not followed, sort by date
+      if (aIsFollowed === bIsFollowed) {
+        return new Date(b.createdAt) - new Date(a.createdAt)
+      }
+
+      // Followed posts come first
+      return aIsFollowed ? -1 : 1
+    })
+
+    // Apply pagination after sorting
+    const paginatedPosts = sortedPosts.slice(skip, skip + parseInt(limit))
+
     // Add isLiked field to each post
-    const postsWithLikeStatus = posts.map(post => ({
+    const postsWithLikeStatus = paginatedPosts.map((post) => ({
       ...post,
       isLiked: post.likes.length > 0,
-      likes: undefined // Remove the likes array from response
+      likes: undefined, // Remove the likes array from response
     }))
 
     // Get total count for pagination
@@ -118,14 +143,14 @@ export const getAllPosts = async (req, res) => {
         currentPage: parseInt(page),
         totalPages: Math.ceil(totalPosts / parseInt(limit)),
         totalPosts,
-        hasMore: skip + posts.length < totalPosts
-      }
+        hasMore: skip + paginatedPosts.length < totalPosts,
+      },
     })
   } catch (error) {
     console.error('Get posts error:', error)
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch posts'
+      error: 'Failed to fetch posts',
     })
   }
 }
