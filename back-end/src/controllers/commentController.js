@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { createNotification } from './notificationController.js'
 
 const prisma = new PrismaClient()
 
@@ -54,6 +55,15 @@ export const createComment = async (req, res) => {
           },
         },
       },
+    })
+
+    // Create notification for post owner
+    await createNotification({
+      type: 'comment',
+      senderId: userId,
+      recipientId: post.userId,
+      postId,
+      content: 'commented on your post',
     })
 
     return res.status(201).json({

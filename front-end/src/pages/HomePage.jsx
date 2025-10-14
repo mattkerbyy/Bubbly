@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LogOut, Home, User, MessageCircle, Bell, Search, Users, Bookmark } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeToggle'
+import NotificationBell from '@/components/NotificationBell'
 import CreatePost from '@/components/CreatePost'
 import Feed from '@/components/Feed'
 
@@ -92,14 +93,7 @@ export default function HomePage() {
             >
               <ThemeToggle />
               
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
-              </Button>
+              <NotificationBell />
 
               <div className="flex items-center gap-3 ml-2">
                 <Avatar 

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { createNotification } from './notificationController.js'
 
 const prisma = new PrismaClient()
 
@@ -58,6 +59,15 @@ export const toggleLike = async (req, res) => {
           postId,
           userId,
         },
+      })
+
+      // Create notification for post owner
+      await createNotification({
+        type: 'like',
+        senderId: userId,
+        recipientId: post.userId,
+        postId,
+        content: 'liked your post',
       })
 
       // Get updated like count

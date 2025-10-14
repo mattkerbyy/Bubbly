@@ -32,6 +32,9 @@ model User {
   likes     Like[]
   followers Follower[] @relation("following")
   following Follower[] @relation("follower")
+  
+  notificationsSent     Notification[] @relation("sender")
+  notificationsReceived Notification[] @relation("recipient")
 }
 
 model Post {
@@ -42,9 +45,10 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments Comment[]
-  likes    Like[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments      Comment[]
+  likes         Like[]
+  notifications Notification[]
 
   @@index([userId])
 }
@@ -90,4 +94,25 @@ model Follower {
   @@unique([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // "like", "comment", "follow", "mention"
+  content     String?
+  senderId    String
+  recipientId String
+  postId      String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  sender    User  @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User  @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  post      Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([senderId])
+  @@index([postId])
+  @@index([isRead])
+  @@index([createdAt])
 }

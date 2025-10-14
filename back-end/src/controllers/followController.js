@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { createNotification } from './notificationController.js'
 
 const prisma = new PrismaClient()
 
@@ -66,6 +67,14 @@ export const followUser = async (req, res) => {
           },
         },
       },
+    })
+
+    // Create notification for the followed user
+    await createNotification({
+      type: 'follow',
+      senderId: currentUserId,
+      recipientId: userId,
+      content: 'started following you',
     })
 
     res.status(201).json({
