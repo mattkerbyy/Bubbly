@@ -4,24 +4,29 @@ import { Toaster } from 'sonner'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useUiStore } from '@/stores/useUiStore'
 import { initializeTheme } from '@/lib/theme'
+import { initializeSocket, disconnectSocket } from '@/lib/socket'
 import PrivateRoute from '@/components/PrivateRoute'
+import GlobalChatPopup from '@/components/GlobalChatPopup'
 
 // Pages
 import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
+import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
 import HomePage from '@/pages/HomePage'
 import ProfilePage from '@/pages/ProfilePage'
 import PostDetailPage from '@/pages/PostDetailPage'
+// import ShareDetailPage from '@/pages/ShareDetailPage'
 import SearchResultsPage from '@/pages/SearchResultsPage'
 import ConnectionsPage from '@/pages/ConnectionsPage'
+import MessagesPage from '@/pages/MessagesPage'
 import LearnMorePage from '@/pages/LearnMorePage'
 import PrivacyPage from '@/pages/PrivacyPage'
 import TermsPage from '@/pages/TermsPage'
 import AboutPage from '@/pages/AboutPage'
 
 function App() {
-  const { isAuthenticated, getMe } = useAuthStore()
+  const { isAuthenticated, getMe, token } = useAuthStore()
   const theme = useUiStore((state) => state.theme)
 
   // Initialize theme immediately
@@ -40,6 +45,16 @@ function App() {
     getMe()
   }, [getMe])
 
+  // Initialize Socket.io when authenticated
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      initializeSocket(token)
+      return () => {
+        disconnectSocket()
+      }
+    }
+  }, [isAuthenticated, token])
+
   return (
     <>
       <Toaster position="top-center" richColors />
@@ -49,6 +64,7 @@ function App() {
           v7_relativeSplatPath: true,
         }}
       >
+      {isAuthenticated && <GlobalChatPopup />}
       <Routes>
         {/* Public Routes */}
         <Route 
@@ -62,6 +78,10 @@ function App() {
         <Route 
           path="/register" 
           element={isAuthenticated ? <Navigate to="/home" replace /> : <RegisterPage />} 
+        />
+        <Route 
+          path="/forgot-password" 
+          element={isAuthenticated ? <Navigate to="/home" replace /> : <ForgotPasswordPage />} 
         />
         <Route path="/learn-more" element={<LearnMorePage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
@@ -93,6 +113,14 @@ function App() {
             </PrivateRoute>
           }
         />
+        {/* <Route
+          path="/share/:shareId"
+          element={
+            <PrivateRoute>
+              <ShareDetailPage />
+            </PrivateRoute>
+          }
+        /> */}
         <Route
           path="/search"
           element={
@@ -106,6 +134,14 @@ function App() {
           element={
             <PrivateRoute>
               <ConnectionsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <PrivateRoute>
+              <MessagesPage />
             </PrivateRoute>
           }
         />

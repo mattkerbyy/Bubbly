@@ -22,12 +22,27 @@ export default function NotificationBell() {
       }
     }
 
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleEscapeKey)
+      
+      // Prevent body scroll on mobile when dropdown is open
+      const isMobile = window.innerWidth < 768
+      if (isMobile) {
+        document.body.style.overflow = 'hidden'
+      }
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscapeKey)
+      document.body.style.overflow = ''
     }
   }, [isOpen])
 
@@ -81,23 +96,70 @@ export default function NotificationBell() {
       {/* Notifications Dropdown */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-80 sm:w-96 bg-card border border-border rounded-lg shadow-lg z-50 max-h-[70vh] overflow-hidden flex flex-col"
-          >
-            {/* Header */}
-            <div className="px-4 py-3 border-b border-border bg-card/95 backdrop-blur-sm sticky top-0">
-              <h3 className="font-semibold text-lg">Notifications</h3>
-            </div>
+          <>
+            {/* Mobile Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setIsOpen(false)}
+            />
 
-            {/* Notifications List */}
-            <div className="flex-1 overflow-y-auto">
-              <NotificationsList onClose={() => setIsOpen(false)} />
-            </div>
-          </motion.div>
+            {/* Dropdown */}
+            <motion.div
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="
+                fixed md:absolute 
+                inset-x-4 top-16 md:inset-x-auto md:top-auto
+                md:right-0 md:mt-2 
+                w-auto md:w-96 
+                max-w-md
+                bg-card border border-border 
+                rounded-lg shadow-xl 
+                z-50 
+                max-h-[calc(100vh-5rem)] md:max-h-[70vh] 
+                overflow-hidden flex flex-col
+              "
+            >
+              {/* Header */}
+              <div className="px-4 py-3 border-b border-border bg-card/95 backdrop-blur-sm sticky top-0 z-10">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">Notifications</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsOpen(false)}
+                    className="md:hidden h-8 w-8 p-0"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Notifications List */}
+              <div className="flex-1 overflow-y-auto">
+                <NotificationsList onClose={() => setIsOpen(false)} />
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

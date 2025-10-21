@@ -85,7 +85,7 @@ export const toggleLike = async (req, res) => {
       })
     }
   } catch (error) {
-    console.error('Error toggling like:', error)
+    // Error toggling like
     return res.status(500).json({
       success: false,
       error: 'Failed to toggle like',
@@ -175,7 +175,7 @@ export const getPostLikes = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error getting post likes:', error)
+    // Error getting post likes
     return res.status(500).json({
       success: false,
       error: 'Failed to get post likes',
@@ -205,7 +205,7 @@ export const checkUserLiked = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error checking user like:', error)
+    // Error checking user like
     return res.status(500).json({
       success: false,
       error: 'Failed to check like status',
@@ -280,7 +280,7 @@ export const getUserLikedPosts = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error getting user liked posts:', error)
+    // Error getting user liked posts
     return res.status(500).json({
       success: false,
       error: 'Failed to get liked posts',

@@ -36,14 +36,14 @@ export default function AboutPage() {
 
   const timeline = [
     {
-      year: '2024',
+      year: '2025',
       title: 'The Beginning',
       description: 'Bubbly was founded with a vision to create a social platform that prioritizes genuine connections over vanity metrics.',
     },
     {
-      year: '2025',
+      year: 'Soon',
       title: 'Launch & Growth',
-      description: 'We launched our beta platform and grew to thousands of users who shared our vision of meaningful social networking.',
+      description: 'We\'re launching our platform and focusing on user feedback to shape its development.',
     },
     {
       year: 'Future',

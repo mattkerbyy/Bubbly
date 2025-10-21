@@ -18,7 +18,7 @@ api.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${state.token}`;
       }
     } catch (error) {
-      console.error('Error parsing auth data:', error);
+      // Failed to parse stored auth data - ignore and continue
     }
   }
   

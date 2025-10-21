@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
-import { Loader2 } from 'lucide-react'
+import { NotebookPen, Loader2 } from 'lucide-react'
 import { useInfinitePosts } from '@/hooks/usePosts'
 import Post from './Post'
+import SharedPost from './SharedPost'
 import { FeedSkeleton } from './skeletons/PostSkeleton'
 import { Button } from './ui/button'
 
@@ -61,7 +62,7 @@ export default function Feed() {
         className="bg-card border border-border rounded-lg p-12 text-center"
       >
         <div className="max-w-md mx-auto">
-          <div className="text-6xl mb-4">📝</div>
+          <NotebookPen className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
           <h3 className="text-xl font-semibold mb-2">No posts yet</h3>
           <p className="text-muted-foreground">
             Be the first to share something! Create a post above to get started.
@@ -74,9 +75,15 @@ export default function Feed() {
   return (
     <div className="space-y-4">
       <AnimatePresence mode="popLayout">
-        {posts.map((post) => (
-          <Post key={post.id} post={post} />
-        ))}
+        {posts.map((item) => {
+          // Handle both posts and shares
+          if (item.type === 'share') {
+            return <SharedPost key={`share-${item.id}`} share={item} />
+          } else {
+            // Regular post (item.type === 'post' or no type for backwards compatibility)
+            return <Post key={`post-${item.id}`} post={item} />
+          }
+        })}
       </AnimatePresence>
 
       {/* Infinite scroll trigger */}

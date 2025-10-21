@@ -1,21 +1,35 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { X, Heart, MessageCircle, Share2, MoreHorizontal, ExternalLink, Trash2, Eye, Edit, FileText, Music, Video as VideoIcon, Image as ImageIcon } from 'lucide-react'
+import {
+  X,
+  MessageCircle,
+  MoreHorizontal,
+  ExternalLink,
+  Trash2,
+  Eye,
+  Edit,
+  FileText,
+  Music,
+  Video as VideoIcon,
+  Image as ImageIcon,
+} from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useDeletePost } from '@/hooks/usePosts'
-import { useToggleLike } from '@/hooks/useLikes'
+import { useAddOrUpdateReaction, useRemoveReaction } from '@/hooks/useReactions'
 import { usePostComments } from '@/hooks/useComments'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import CommentList from '@/components/CommentList'
 import CommentInput from '@/components/CommentInput'
 import EditPostModal from '@/components/EditPostModal'
-import LikesModal from '@/components/LikesModal'
+import ReactionPicker from '@/components/ReactionPicker'
+import ShareButton from '@/components/ShareButton'
 import LikesList from '@/components/LikesList'
+import ReactionsModal from '@/components/ReactionsModal'
+import ShareListModal from '@/components/ShareListModal'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,13 +54,19 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const deletePostMutation = useDeletePost()
-  const toggleLikeMutation = useToggleLike()
+  const addOrUpdateReactionMutation = useAddOrUpdateReaction()
+  const removeReactionMutation = useRemoveReaction()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [showLikesModal, setShowLikesModal] = useState(false)
-  const [isLiked, setIsLiked] = useState(post?.isLiked || false)
-  const [likeCount, setLikeCount] = useState(post?._count?.likes || 0)
+  const [showReactionsModal, setShowReactionsModal] = useState(false)
+  const [isShareListOpen, setIsShareListOpen] = useState(false)
+  // userReaction is now a string (reactionType) from backend, not an object
+  const [userReaction, setUserReaction] = useState(post?.userReaction || null)
+  const [reactionCount, setReactionCount] = useState(post?._count?.reactions || 0)
+  const [commentCount, setCommentCount] = useState(post?._count?.comments || 0)
+  const [shareCount, setShareCount] = useState(post?._count?.shares || 0)
   const [editingComment, setEditingComment] = useState(null)
+  const commentSectionRef = useRef(null)
 
   const isOwnPost = user?.id === post?.user?.id
 
@@ -57,14 +77,23 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
   } = usePostComments(post?.id, { enabled: isOpen && !!post?.id })
 
   const comments = commentsData?.comments || []
+  const totalComments = comments.length
 
-  // Update like status when post changes
+  // Update reaction status when post changes
   useEffect(() => {
     if (post) {
-      setIsLiked(post.isLiked || false)
-      setLikeCount(post._count?.likes || 0)
+      // Backend now returns userReaction as a string directly
+      setUserReaction(post.userReaction || null)
+      setReactionCount(post._count?.reactions || 0)
+      setCommentCount(post._count?.comments || 0)
+      setShareCount(post._count?.shares || 0)
     }
+    // We intentionally omit comments dependency to avoid loop; comment count sync handled separately
   }, [post])
+
+  useEffect(() => {
+    setCommentCount(totalComments)
+  }, [totalComments])
 
   // Close on Escape key
   useEffect(() => {
@@ -99,22 +128,39 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
       setShowDeleteDialog(false)
       onClose() // Close the modal after deletion
     } catch (error) {
-      console.error('Failed to delete post:', error)
+  // Delete post error handled by UI
     }
   }
 
-  const handleLike = async () => {
-    // Optimistic update
-    setIsLiked(!isLiked)
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1)
+  const handleReaction = async (reactionType) => {
+    if (!post?.id) return
 
-    try {
-      await toggleLikeMutation.mutateAsync(post.id)
-    } catch (error) {
-      // Revert on error
-      setIsLiked(isLiked)
-      setLikeCount(likeCount)
-      console.error('Failed to toggle like:', error)
+    if (userReaction === reactionType) {
+      const previousReaction = userReaction
+      const previousCount = reactionCount
+
+      setUserReaction(null)
+      setReactionCount(Math.max(reactionCount - 1, 0))
+
+      try {
+        await removeReactionMutation.mutateAsync(post.id)
+      } catch (error) {
+        setUserReaction(previousReaction)
+        setReactionCount(previousCount)
+      }
+    } else {
+      const previousReaction = userReaction
+      const previousCount = reactionCount
+
+      setUserReaction(reactionType)
+      setReactionCount(userReaction ? reactionCount : reactionCount + 1)
+
+      try {
+        await addOrUpdateReactionMutation.mutateAsync({ postId: post.id, reactionType })
+      } catch (error) {
+        setUserReaction(previousReaction)
+        setReactionCount(previousCount)
+      }
     }
   }
 
@@ -124,6 +170,16 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
 
   const handleCancelEdit = () => {
     setEditingComment(null)
+  }
+
+  const handleCommentFocus = () => {
+    if (!commentSectionRef.current) return
+
+    commentSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const textarea = commentSectionRef.current.querySelector('textarea')
+    if (textarea) {
+      setTimeout(() => textarea.focus(), 150)
+    }
   }
 
   const getInitials = (name) => {
@@ -223,7 +279,7 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
-          style={{ margin: 0, padding: 0 }}
+          style={{ margin: 0, padding: 0, overflow: 'hidden' }}
           onClick={handleBackdropClick}
         >
           {/* Modal Dialog */}
@@ -326,7 +382,7 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-4">
+            <div className="flex-1 overflow-y-auto px-4 scrollbar-hide">
               {/* Post Content */}
               {post.content && (
                 <div className="py-4">
@@ -425,22 +481,39 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
               )}
 
               {/* Engagement Stats - Facebook style */}
-              {(likeCount > 0 || comments.length > 0) && (
+              {(reactionCount > 0 || commentCount > 0 || shareCount > 0) && (
                 <div className="px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    {/* Likes with avatars */}
-                    <LikesList
-                      postId={post.id}
-                      likeCount={likeCount}
-                      onViewAll={() => setShowLikesModal(true)}
-                    />
-                    
-                    {/* Comments count */}
-                    {comments.length > 0 && (
-                      <div className="text-sm text-muted-foreground">
-                        {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-                      </div>
-                    )}
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex-1">
+                      {reactionCount > 0 && (
+                        <LikesList
+                          postId={post.id}
+                          likeCount={reactionCount}
+                          userReaction={userReaction}
+                          onViewAll={() => setShowReactionsModal(true)}
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {commentCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleCommentFocus}
+                          className="hover:underline"
+                        >
+                          {commentCount} {commentCount === 1 ? 'comment' : 'comments'}
+                        </button>
+                      )}
+                      {shareCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setIsShareListOpen(true)}
+                          className="hover:underline"
+                        >
+                          {shareCount} {shareCount === 1 ? 'share' : 'shares'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -449,51 +522,31 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
 
               {/* Action Buttons */}
               <div className="flex items-center justify-around p-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLike}
-                  disabled={toggleLikeMutation.isPending}
-                  className={`flex-1 gap-2 transition-colors ${
-                    isLiked
-                      ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20'
-                      : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-                  }`}
-                >
-                  <motion.div
-                    key={isLiked ? 'liked' : 'unliked'}
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                  >
-                    <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-                  </motion.div>
-                  <span className="font-medium">Like</span>
-                </Button>
+                <ReactionPicker
+                  postId={post.id}
+                  currentReaction={userReaction}
+                  onReactionChange={handleReaction}
+                  disabled={addOrUpdateReactionMutation.isPending || removeReactionMutation.isPending}
+                  wrapperClassName="flex-1"
+                />
 
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="flex-1 gap-2 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                  className="flex-1 gap-2 text-muted-foreground hover:text-primary"
+                  onClick={handleCommentFocus}
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span className="font-medium">Comment</span>
                 </Button>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 gap-2 text-muted-foreground hover:text-primary hover:bg-primary/5"
-                >
-                  <Share2 className="h-5 w-5" />
-                  <span className="font-medium">Share</span>
-                </Button>
+                <ShareButton post={post} className="flex-1" />
               </div>
 
               <Separator />
 
               {/* Comments Section */}
-              <div className="p-4 space-y-4">
+              <div ref={commentSectionRef} className="p-4 space-y-4">
                 <CommentList
                   comments={comments}
                   onEdit={handleEditComment}
@@ -542,11 +595,16 @@ export default function PostPreviewModal({ isOpen, post, onClose }) {
         onClose={() => setShowEditModal(false)}
       />
 
-      {/* Likes modal - render outside modal for proper z-index */}
-      <LikesModal
+      <ReactionsModal
         postId={post?.id}
-        isOpen={showLikesModal}
-        onClose={() => setShowLikesModal(false)}
+        isOpen={showReactionsModal}
+        onClose={() => setShowReactionsModal(false)}
+      />
+
+      <ShareListModal
+        isOpen={isShareListOpen}
+        onClose={() => setIsShareListOpen(false)}
+        postId={post?.id}
       />
     </AnimatePresence>
   )

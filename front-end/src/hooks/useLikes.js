@@ -87,7 +87,7 @@ export const useToggleLike = () => {
         queryClient.setQueryData(['posts'], context.previousPosts)
       }
       toast.error('Failed to update like')
-      console.error('Error toggling like:', error)
+      // Error handled by toast
     },
     onSettled: () => {
       // Refetch to ensure data is in sync across all pages

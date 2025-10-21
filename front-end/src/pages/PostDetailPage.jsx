@@ -1,12 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Loader2, Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Edit, FileText, Music, Video as VideoIcon, Image as ImageIcon, ExternalLink } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { ArrowLeft, Loader2, MessageCircle, MoreHorizontal, Trash2, Edit, FileText, Music, Video as VideoIcon, Image as ImageIcon, ExternalLink } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useDeletePost } from '@/hooks/usePosts'
-import { useToggleLike } from '@/hooks/useLikes'
+import { useAddOrUpdateReaction, useRemoveReaction } from '@/hooks/useReactions'
 import { usePostComments } from '@/hooks/useComments'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -31,8 +31,12 @@ import {
 import CommentList from '@/components/CommentList'
 import CommentInput from '@/components/CommentInput'
 import EditPostModal from '@/components/EditPostModal'
-import LikesModal from '@/components/LikesModal'
+import ReactionsModal from '@/components/ReactionsModal'
 import LikesList from '@/components/LikesList'
+import ReactionPicker from '@/components/ReactionPicker'
+import ShareButton from '@/components/ShareButton'
+import ShareListModal from '@/components/ShareListModal'
+import { AudienceIcon } from '@/components/AudienceSelector'
 import { PostSkeleton } from '@/components/skeletons/PostSkeleton'
 import api from '@/lib/api'
 
@@ -50,15 +54,20 @@ export default function PostDetailPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user } = useAuthStore()
+  const commentInputRef = useRef(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [showLikesModal, setShowLikesModal] = useState(false)
+  const [showReactionsModal, setShowReactionsModal] = useState(false)
+  const [isShareListOpen, setIsShareListOpen] = useState(false)
   const [imageError, setImageError] = useState(false)
-  const [isLiked, setIsLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
+  const [userReaction, setUserReaction] = useState(null)
+  const [reactionCount, setReactionCount] = useState(0)
+  const [shareCount, setShareCount] = useState(0)
+  const [editingComment, setEditingComment] = useState(null)
 
   const deletePostMutation = useDeletePost()
-  const toggleLikeMutation = useToggleLike()
+  const addOrUpdateReactionMutation = useAddOrUpdateReaction()
+  const removeReactionMutation = useRemoveReaction()
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['post', postId],
@@ -76,11 +85,14 @@ export default function PostDetailPage() {
 
   const comments = commentsData?.comments || []
 
-  // Update like status when post loads
+  // Update reaction status when post loads
   useEffect(() => {
     if (post) {
-      setIsLiked(post.isLiked || false)
-      setLikeCount(post._count?.likes || 0)
+      // userReaction is just the string reactionType, not an object
+      const reaction = post.userReaction || null
+      setUserReaction(reaction)
+      setReactionCount(post._count?.reactions || 0)
+      setShareCount(post._count?.shares || 0)
     }
   }, [post])
 
@@ -137,23 +149,43 @@ export default function PostDetailPage() {
     return formatDistanceToNow(new Date(date), { addSuffix: true })
   }
 
-  const handleLike = async () => {
-    const previousLiked = isLiked
-    const previousCount = likeCount
+  const handleReaction = async (reactionType) => {
+    // If clicking the same reaction, remove it
+    if (userReaction === reactionType) {
+      const previousReaction = userReaction
+      const previousCount = reactionCount
+      
+      // Optimistic update
+      setUserReaction(null)
+      setReactionCount(Math.max(reactionCount - 1, 0))
 
-    // Optimistic update
-    setIsLiked(!isLiked)
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1)
+      try {
+        await removeReactionMutation.mutateAsync(post.id)
+        queryClient.invalidateQueries({ queryKey: ['posts'] })
+        queryClient.invalidateQueries({ queryKey: ['post', postId] })
+      } catch (error) {
+        // Revert on error
+        setUserReaction(previousReaction)
+        setReactionCount(previousCount)
+      }
+    } else {
+      // Add or update reaction
+      const previousReaction = userReaction
+      const previousCount = reactionCount
+      
+      // Optimistic update - userReaction is a string, not an object
+      setUserReaction(reactionType)
+      setReactionCount(userReaction ? reactionCount : reactionCount + 1)
 
-    try {
-      await toggleLikeMutation.mutateAsync(post.id)
-      // Invalidate queries to sync across all pages
-      queryClient.invalidateQueries({ queryKey: ['posts'] })
-      queryClient.invalidateQueries({ queryKey: ['post', postId] })
-    } catch (error) {
-      // Revert on error
-      setIsLiked(previousLiked)
-      setLikeCount(previousCount)
+      try {
+        await addOrUpdateReactionMutation.mutateAsync({ postId: post.id, reactionType })
+        queryClient.invalidateQueries({ queryKey: ['posts'] })
+        queryClient.invalidateQueries({ queryKey: ['post', postId] })
+      } catch (error) {
+        // Revert on error
+        setUserReaction(previousReaction)
+        setReactionCount(previousCount)
+      }
     }
   }
 
@@ -162,8 +194,16 @@ export default function PostDetailPage() {
       await deletePostMutation.mutateAsync(post.id)
       navigate('/home')
     } catch (error) {
-      console.error('Delete error:', error)
+  // Delete failed - handled by UI
     }
+  }
+
+  const handleCommentClick = () => {
+    // Scroll to and focus on comment input
+    commentInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => {
+      commentInputRef.current?.focus()
+    }, 300)
   }
 
   if (isLoading) {
@@ -278,6 +318,12 @@ export default function PostDetailPage() {
                       <span>@{post.user.username}</span>
                       <span>•</span>
                       <span>{formatDate(post.createdAt)}</span>
+                      {post.audience && (
+                        <>
+                          <span>•</span>
+                          <AudienceIcon audience={post.audience} />
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -406,66 +452,60 @@ export default function PostDetailPage() {
                   </div>
                 )}
 
-                {/* Engagement stats - Facebook style */}
-                {(likeCount > 0 || comments.length > 0) && (
+                {/* Engagement stats */}
+                {(reactionCount > 0 || comments.length > 0 || shareCount > 0) && (
                   <div className="flex items-center justify-between pt-3 pb-2">
-                    {/* Likes with avatars */}
+                    {/* Reactions with avatars */}
                     <LikesList
                       postId={post.id}
-                      likeCount={likeCount}
-                      onViewAll={() => setShowLikesModal(true)}
+                      likeCount={reactionCount}
+                      userReaction={userReaction}
+                      onViewAll={() => setShowReactionsModal(true)}
                     />
                     
-                    {/* Comments count */}
-                    {comments.length > 0 && (
-                      <div className="text-sm text-muted-foreground">
-                        {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-                      </div>
-                    )}
+                    {/* Comments and shares count on the right */}
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground ml-auto">
+                      {comments.length > 0 && (
+                        <button
+                          onClick={handleCommentClick}
+                          className="hover:underline"
+                        >
+                          {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+                        </button>
+                      )}
+                      {shareCount > 0 && (
+                        <button
+                          onClick={() => setIsShareListOpen(true)}
+                          className="hover:underline"
+                        >
+                          {shareCount} {shareCount === 1 ? 'share' : 'shares'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
                 {/* Action Buttons */}
                 <div className="flex items-center justify-around pt-2 border-t border-border">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLike}
-                    disabled={toggleLikeMutation.isPending}
-                    className={`flex-1 gap-2 transition-colors ${
-                      isLiked
-                        ? 'text-red-500 hover:text-red-600'
-                        : 'text-muted-foreground hover:text-primary'
-                    }`}
-                  >
-                    <motion.div
-                      key={isLiked ? 'liked' : 'unliked'}
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                    >
-                      <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-                    </motion.div>
-                    <span className="font-medium">Like</span>
-                  </Button>
+                  <ReactionPicker
+                    postId={post.id}
+                    currentReaction={userReaction}
+                    onReactionChange={handleReaction}
+                    disabled={addOrUpdateReactionMutation.isPending || removeReactionMutation.isPending}
+                    wrapperClassName="flex-1"
+                  />
 
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={handleCommentClick}
                     className="flex-1 gap-2 text-muted-foreground hover:text-primary"
                   >
                     <MessageCircle className="h-5 w-5" />
                     <span className="font-medium">Comment</span>
                   </Button>
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-1 gap-2 text-muted-foreground hover:text-primary"
-                  >
-                    <Share2 className="h-5 w-5" />
-                    <span className="font-medium">Share</span>
-                  </Button>
+                  <ShareButton post={post} />
                 </div>
               </div>
             </CardContent>
@@ -479,11 +519,22 @@ export default function PostDetailPage() {
                 <Separator className="mb-4" />
                 
                 {/* Comment Input */}
-                <CommentInput postId={post.id} />
+                <CommentInput 
+                  ref={commentInputRef}
+                  postId={post.id}
+                  editingComment={editingComment}
+                  onCancelEdit={() => setEditingComment(null)}
+                />
 
                 {/* Comments List */}
                 <div className="mt-6">
-                  <CommentList postId={post.id} comments={comments} isLoading={commentsLoading} />
+                  <CommentList
+                    postId={post.id}
+                    comments={comments}
+                    isLoading={commentsLoading}
+                    postOwnerId={post.user.id}
+                    onEdit={(comment) => setEditingComment(comment)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -497,7 +548,7 @@ export default function PostDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete post?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your post.
+              This action cannot be undone. Your post will be permanently deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -520,11 +571,18 @@ export default function PostDetailPage() {
         onClose={() => setShowEditModal(false)}
       />
 
-      {/* Likes modal */}
-      <LikesModal
-        postId={post?.id}
-        isOpen={showLikesModal}
-        onClose={() => setShowLikesModal(false)}
+      {/* Reactions modal */}
+      <ReactionsModal
+        postId={post.id}
+        isOpen={showReactionsModal}
+        onClose={() => setShowReactionsModal(false)}
+      />
+
+      {/* Share list modal */}
+      <ShareListModal
+        postId={post.id}
+        isOpen={isShareListOpen}
+        onClose={() => setIsShareListOpen(false)}
       />
     </div>
   )

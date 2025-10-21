@@ -12,11 +12,13 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Loader2, Upload, X, FileText, Music, Video as VideoIcon, Image as ImageIcon } from 'lucide-react'
 import { useUpdatePost } from '@/hooks/usePosts'
+import AudienceSelector from '@/components/AudienceSelector'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '')
 
 export default function EditPostModal({ post, isOpen, onClose }) {
   const [content, setContent] = useState(post?.content || '')
+  const [audience, setAudience] = useState(post?.audience || 'Public')
   const [selectedFiles, setSelectedFiles] = useState([])
   const [existingFiles, setExistingFiles] = useState(post?.files || [])
   const [previewFile, setPreviewFile] = useState(null)
@@ -28,6 +30,7 @@ export default function EditPostModal({ post, isOpen, onClose }) {
   useEffect(() => {
     if (post) {
       setContent(post?.content || '')
+      setAudience(post?.audience || 'Public')
       setExistingFiles(post?.files || [])
       setSelectedFiles([])
     }
@@ -138,6 +141,7 @@ export default function EditPostModal({ post, isOpen, onClose }) {
     try {
       const formData = new FormData()
       formData.append('content', content.trim() || '')
+      formData.append('audience', audience)
       
       // Send the list of existing files to keep
       if (existingFiles.length > 0) {
@@ -168,7 +172,7 @@ export default function EditPostModal({ post, isOpen, onClose }) {
       
       onClose()
     } catch (error) {
-      console.error('Error updating post:', error)
+  // Error updating post handled by UI
     }
   }
 
@@ -179,6 +183,7 @@ export default function EditPostModal({ post, isOpen, onClose }) {
     })
     
     setContent(post?.content || '')
+    setAudience(post?.audience || 'Public')
     setExistingFiles(post?.files || [])
     setSelectedFiles([])
     if (fileInputRef.current) {
@@ -188,7 +193,8 @@ export default function EditPostModal({ post, isOpen, onClose }) {
   }
 
   const hasChanges = 
-    content !== (post?.content || '') || 
+    content !== (post?.content || '') ||
+    audience !== (post?.audience || 'Public') ||
     selectedFiles.length > 0 || 
     existingFiles.length !== (post?.files?.length || 0)
 
@@ -467,7 +473,7 @@ export default function EditPostModal({ post, isOpen, onClose }) {
               </div>
             )}
 
-            {/* File Upload Button */}
+            {/* File Upload Button & Audience Selector */}
             <div className="flex items-center gap-2">
               <input
                 ref={fileInputRef}
@@ -498,6 +504,18 @@ export default function EditPostModal({ post, isOpen, onClose }) {
                   {existingFiles.length + selectedFiles.length}/10
                 </span>
               )}
+            </div>
+            
+            {/* Audience Selector */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">
+                Who can see this post?
+              </label>
+              <AudienceSelector
+                value={audience}
+                onChange={setAudience}
+                disabled={updatePostMutation.isPending}
+              />
             </div>
           </div>
         </form>

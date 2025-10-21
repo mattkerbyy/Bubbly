@@ -9,7 +9,16 @@ import { Separator } from '@/components/ui/separator'
 import { useSearchAll } from '@/hooks/useSearch'
 import { cn } from '@/lib/utils'
 
+// Normalize backend origin
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
+
 export default function SearchBar({ className }) {
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http')) return imagePath
+    return `${API_URL}${imagePath}`
+  }
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [isFocused, setIsFocused] = useState(false)
@@ -186,7 +195,7 @@ export default function SearchBar({ className }) {
                         transition={{ duration: 0.15 }}
                       >
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.avatar} alt={user.name} />
+                          <AvatarImage src={getImageUrl(user.avatar)} alt={user.name} />
                           <AvatarFallback>{user.name?.[0] || user.username[0]}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
@@ -229,7 +238,7 @@ export default function SearchBar({ className }) {
                           transition={{ duration: 0.15 }}
                         >
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={post.user.avatar} alt={post.user.name} />
+                            <AvatarImage src={getImageUrl(post.user.avatar)} alt={post.user.name} />
                             <AvatarFallback>{post.user.name?.[0] || post.user.username[0]}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">

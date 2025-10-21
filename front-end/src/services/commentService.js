@@ -6,12 +6,26 @@ export const createComment = async (postId, content) => {
   return response.data.data // Extract data from { success, data } structure
 }
 
+// Create a comment on a share
+export const createShareComment = async (shareId, content) => {
+  const response = await api.post(`/share-comments/${shareId}/comments`, { content })
+  return response.data // ShareComment controller returns data directly
+}
+
 // Get comments for a post
 export const getPostComments = async (postId, page = 1, limit = 10) => {
   const response = await api.get(`/comments/posts/${postId}`, {
     params: { page, limit },
   })
   return response.data.data // Extract data from { success, data } structure
+}
+
+// Get comments for a share
+export const getShareComments = async (shareId, page = 1, limit = 10) => {
+  const response = await api.get(`/share-comments/${shareId}/comments`, {
+    params: { page, limit },
+  })
+  return response.data // ShareComment controller returns data directly
 }
 
 // Update a comment
@@ -28,7 +42,9 @@ export const deleteComment = async (commentId) => {
 
 export default {
   createComment,
+  createShareComment,
   getPostComments,
+  getShareComments,
   updateComment,
   deleteComment,
 }

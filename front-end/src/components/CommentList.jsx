@@ -22,18 +22,25 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useDeleteComment } from '@/hooks/useComments'
+import { useDeleteShareComment } from '@/hooks/useShareComments'
 import CommentSkeleton from '@/components/skeletons/CommentSkeleton'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '')
 
-function CommentItem({ comment, onEdit, postOwnerId }) {
+function CommentItem({ comment, onEdit, postOwnerId, shareId, shareOwnerId }) {
   const { user } = useAuthStore()
   const deleteCommentMutation = useDeleteComment()
+  const deleteShareCommentMutation = useDeleteShareComment()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
+  const isShareContext = !!shareId
+  const isDeleting = isShareContext ? deleteShareCommentMutation.isPending : deleteCommentMutation.isPending
+
   const isOwnComment = user?.id === comment.user.id
-  const isPostOwner = user?.id === postOwnerId
-  const canDelete = isOwnComment || isPostOwner
+  const ownerId = isShareContext ? shareOwnerId : postOwnerId
+  const isOwner = ownerId ? user?.id === ownerId : false
+  const canDelete = isOwnComment || isOwner
+  const canEdit = isOwnComment
 
   const getInitials = (name) => {
     if (!name) return 'U'
@@ -61,10 +68,17 @@ function CommentItem({ comment, onEdit, postOwnerId }) {
 
   const handleDelete = async () => {
     try {
-      await deleteCommentMutation.mutateAsync(comment.id)
+      if (isShareContext) {
+        await deleteShareCommentMutation.mutateAsync({ commentId: comment.id, shareId })
+      } else {
+        await deleteCommentMutation.mutateAsync({
+          commentId: comment.id,
+          postId: comment.postId || comment.post?.id,
+        })
+      }
       setShowDeleteDialog(false)
     } catch (error) {
-      console.error('Failed to delete comment:', error)
+  // Failed to delete comment handled by UI
     }
   }
 
@@ -102,7 +116,7 @@ function CommentItem({ comment, onEdit, postOwnerId }) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="z-[10003]">
-                    {isOwnComment && (
+                    {canEdit && (
                       <DropdownMenuItem
                         onClick={() => onEdit?.(comment)}
                         className="cursor-pointer"
@@ -146,9 +160,9 @@ function CommentItem({ comment, onEdit, postOwnerId }) {
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-destructive hover:bg-destructive/90"
-              disabled={deleteCommentMutation.isPending}
+              disabled={isDeleting}
             >
-              {deleteCommentMutation.isPending ? 'Deleting...' : 'Delete'}
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -157,7 +171,14 @@ function CommentItem({ comment, onEdit, postOwnerId }) {
   )
 }
 
-export default function CommentList({ comments, onEdit, isLoading, postOwnerId }) {
+export default function CommentList({
+  comments,
+  onEdit,
+  isLoading,
+  postOwnerId,
+  shareId,
+  shareOwnerId,
+}) {
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -181,11 +202,13 @@ export default function CommentList({ comments, onEdit, isLoading, postOwnerId }
     <div className="space-y-3">
       <AnimatePresence mode="popLayout">
         {comments.map((comment) => (
-          <CommentItem 
-            key={comment.id} 
-            comment={comment} 
-            onEdit={onEdit} 
+          <CommentItem
+            key={comment.id}
+            comment={comment}
+            onEdit={onEdit}
             postOwnerId={postOwnerId}
+            shareId={shareId}
+            shareOwnerId={shareOwnerId}
           />
         ))}
       </AnimatePresence>

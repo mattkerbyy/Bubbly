@@ -45,7 +45,6 @@ export default function PrivacyPage() {
         'We use industry-standard encryption to protect your data in transit and at rest.',
         'Passwords are hashed using bcrypt before storage.',
         'We implement regular security audits and vulnerability assessments.',
-        'Two-factor authentication is available to add an extra layer of security.',
         'Access to user data is restricted to authorized personnel only.',
         'However, no method of transmission over the Internet is 100% secure, and we cannot guarantee absolute security.',
       ]
@@ -102,7 +101,6 @@ export default function PrivacyPage() {
       content: [
         'If you have questions about this Privacy Policy or our data practices, please contact us:',
         'Email: privacy@bubbly.com',
-        'Address: Bubbly Inc., 123 Social Street, San Francisco, CA 94105',
         'We will respond to your inquiries within 30 days.',
       ]
     },
@@ -145,7 +143,7 @@ export default function PrivacyPage() {
           <Shield className="w-16 h-16 text-primary mx-auto mb-6" />
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Privacy Policy</h1>
           <p className="text-lg text-muted-foreground">
-            Last Updated: October 13, 2025
+            Last Updated: October 18, 2025
           </p>
           <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
             At Bubbly, we take your privacy seriously. This Privacy Policy explains how we collect, 

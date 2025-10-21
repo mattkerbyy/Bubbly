@@ -7,6 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
+import AudienceSelector from '@/components/AudienceSelector'
+
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '')
 
 export default function CreatePost() {
   const { user } = useAuthStore()
@@ -14,6 +17,7 @@ export default function CreatePost() {
   
   const [content, setContent] = useState('')
   const [files, setFiles] = useState([]) // Array of files with metadata
+  const [audience, setAudience] = useState('Public') // Post privacy setting
   const fileInputRef = useRef(null)
 
   const getInitials = (name) => {
@@ -24,6 +28,12 @@ export default function CreatePost() {
       .join('')
       .toUpperCase()
       .slice(0, 2)
+  }
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http')) return imagePath
+    return `${API_URL}${imagePath}`
   }
 
   const getFileType = (file) => {
@@ -117,6 +127,9 @@ export default function CreatePost() {
       formData.append('content', content.trim())
     }
     
+    // Add audience setting
+    formData.append('audience', audience)
+    
     // Add all files with the field name 'files'
     files.forEach((fileData) => {
       formData.append('files', fileData.file)
@@ -128,11 +141,12 @@ export default function CreatePost() {
       // Reset form
       setContent('')
       setFiles([])
+      setAudience('Public')
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
     } catch (error) {
-      console.error('Failed to create post:', error)
+  // Failed to create post handled by UI
     }
   }
 
@@ -150,7 +164,7 @@ export default function CreatePost() {
             {/* User info and textarea */}
             <div className="flex gap-3">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={user?.avatar} />
+                <AvatarImage src={getImageUrl(user?.avatar)} />
                 <AvatarFallback className="bg-primary text-white">
                   {getInitials(user?.name)}
                 </AvatarFallback>
@@ -268,20 +282,28 @@ export default function CreatePost() {
                 )}
               </div>
 
-              <Button
-                type="submit"
-                disabled={isSubmitDisabled}
-                className="min-w-24"
-              >
-                {createPostMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Posting...
-                  </>
-                ) : (
-                  'Post'
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <AudienceSelector
+                  value={audience}
+                  onChange={setAudience}
+                  disabled={createPostMutation.isPending}
+                />
+                
+                <Button
+                  type="submit"
+                  disabled={isSubmitDisabled}
+                  className="min-w-24"
+                >
+                  {createPostMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Posting...
+                    </>
+                  ) : (
+                    'Post'
+                  )}
+                </Button>
+              </div>
             </div>
           </form>
         </CardContent>

@@ -127,3 +127,53 @@ export const useDeletePost = () => {
     }
   })
 }
+
+// Delete share mutation (unshare)
+export const useDeleteShare = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: postService.deleteShare,
+    onMutate: async (postId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: postKeys.lists() })
+
+      // Snapshot previous value
+      const previousPosts = queryClient.getQueryData(postKeys.lists())
+
+      // Optimistically remove share from cache
+      queryClient.setQueryData(postKeys.lists(), (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          pages: old.pages.map(page => ({
+            ...page,
+            data: page.data.filter(item => {
+              // Remove shares where the postId matches
+              if (item.type === 'share' && item.postId === postId) {
+                return false
+              }
+              return true
+            })
+          }))
+        }
+      })
+
+      return { previousPosts }
+    },
+    onSuccess: () => {
+      toast.success('Share removed successfully!')
+    },
+    onError: (error, postId, context) => {
+      // Rollback on error
+      if (context?.previousPosts) {
+        queryClient.setQueryData(postKeys.lists(), context.previousPosts)
+      }
+      toast.error(error.response?.data?.error || 'Failed to remove share')
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: postKeys.lists() })
+    }
+  })
+}

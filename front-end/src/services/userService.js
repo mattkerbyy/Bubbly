@@ -81,3 +81,13 @@ export const searchUsers = async (query, limit = 10) => {
   })
   return response.data
 }
+
+/**
+ * Delete user account
+ */
+export const deleteAccount = async (password) => {
+  const response = await api.delete('/users/account', {
+    data: { password }
+  })
+  return response.data
+}

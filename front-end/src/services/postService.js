@@ -51,5 +51,11 @@ export const postService = {
   deletePost: async (postId) => {
     const { data } = await api.delete(`/posts/${postId}`)
     return data
+  },
+
+  // Delete share (unshare)
+  deleteShare: async (postId) => {
+    const { data } = await api.delete(`/shares/${postId}`)
+    return data
   }
 }

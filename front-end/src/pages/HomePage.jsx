@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Home, User, MessageCircle, Users, LogOut } from 'lucide-react'
+import { Home, User, MessageCircle, Users, LogOut, Search } from 'lucide-react'
 import { useSuggestedUsers } from '@/hooks/useFollow'
 import { useFollowUser } from '@/hooks/useFollow'
 import {
@@ -16,6 +16,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog'
 import { useState } from 'react'
 import ThemeToggle from '@/components/ThemeToggle'
 import NotificationBell from '@/components/NotificationBell'
@@ -33,6 +37,7 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [showMobileSearch, setShowMobileSearch] = useState(false)
   const { data: suggestedUsersData, isLoading: loadingSuggested } = useSuggestedUsers(3)
   const followMutation = useFollowUser()
 
@@ -45,7 +50,7 @@ export default function HomePage() {
     try {
       await followMutation.mutateAsync(userId)
     } catch (error) {
-      console.error('Error following user:', error)
+  // Error following user - handled by UI feedback
     }
   }
 
@@ -69,7 +74,7 @@ export default function HomePage() {
     { icon: Home, label: 'Home', active: true, onClick: () => navigate('/home') },
     { icon: User, label: 'Profile', onClick: () => navigate(`/profile/${user?.username}`) },
     { icon: Users, label: 'Connections', onClick: () => navigate('/connections') },
-    { icon: MessageCircle, label: 'Messages' },
+    { icon: MessageCircle, label: 'Messages', onClick: () => navigate('/messages') },
   ]
 
   const suggestedUsers = suggestedUsersData?.data || []
@@ -111,6 +116,16 @@ export default function HomePage() {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-2 flex-shrink-0"
             >
+              {/* Mobile Search Button - Only visible on mobile */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowMobileSearch(true)}
+                className="md:hidden text-muted-foreground hover:text-primary"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+
               {/* Desktop - Theme toggle */}
               <div className="hidden md:flex items-center gap-2">
                 <ThemeToggle />
@@ -309,6 +324,15 @@ export default function HomePage() {
           ))}
         </div>
       </nav>
+
+      {/* Mobile Search Dialog */}
+      <Dialog open={showMobileSearch} onOpenChange={setShowMobileSearch}>
+        <DialogContent hideClose className="p-0 gap-0 max-w-lg top-[4.5rem] translate-y-0 sm:top-[4.5rem]">
+          <div className="w-full p-4">
+            <SearchBar />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Logout confirmation dialog */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>

@@ -111,10 +111,10 @@ img, video, canvas, svg {
 }
 
 /* Performance optimizations */
-* {
-  /* Reduce repaints */
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+#app-root,
+body,
+html {
+  height: 100%;
 }
 
 /* Smooth scrolling with reduced motion support */
@@ -249,4 +249,15 @@ img, video, canvas, svg {
   ::-webkit-scrollbar-thumb:active {
     transform: none !important;
   }
+}
+
+/* Scroll container - ensure scrolling works properly */
+.scroll-container {
+  position: relative;
+  overflow-y: scroll !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
+  transform: translateZ(0);
 }

@@ -9,6 +9,10 @@ import { useFollowUser, useUnfollowUser } from '@/hooks/useFollow'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { cn } from '@/lib/utils'
 
+// Normalize backend origin
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
+
 const UserCard = forwardRef(({ user, compact = false }, ref) => {
   const navigate = useNavigate()
   const currentUser = useAuthStore((state) => state.user)
@@ -17,6 +21,12 @@ const UserCard = forwardRef(({ user, compact = false }, ref) => {
 
   const isOwnProfile = currentUser?.id === user.id
   const isFollowing = user.isFollowing
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http')) return imagePath
+    return `${API_URL}${imagePath}`
+  }
 
   const handleFollowToggle = (e) => {
     e.stopPropagation()
@@ -41,7 +51,7 @@ const UserCard = forwardRef(({ user, compact = false }, ref) => {
         transition={{ duration: 0.15 }}
       >
         <Avatar className="h-10 w-10">
-          <AvatarImage src={user.avatar} alt={user.name} />
+          <AvatarImage src={getImageUrl(user.avatar)} alt={user.name} />
           <AvatarFallback>{user.name?.[0] || user.username[0]}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
@@ -74,7 +84,7 @@ const UserCard = forwardRef(({ user, compact = false }, ref) => {
         <div className="flex items-start gap-4">
           {/* Avatar */}
           <Avatar className="h-16 w-16 ring-2 ring-background group-hover:ring-primary/20 transition-all">
-            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarImage src={getImageUrl(user.avatar)} alt={user.name} />
             <AvatarFallback className="text-xl">{user.name?.[0] || user.username[0]}</AvatarFallback>
           </Avatar>
 

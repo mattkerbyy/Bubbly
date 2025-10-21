@@ -46,12 +46,14 @@ export default function RegisterPage() {
       newErrors.name = 'Name is required'
     } else if (formData.name.trim().length < 2) {
       newErrors.name = 'Name must be at least 2 characters'
+    } else if (!/^[a-zA-Z\s]+$/.test(formData.name.trim())) {
+      newErrors.name = 'Name must contain letters only'
     }
 
     if (!formData.username.trim()) {
       newErrors.username = 'Username is required'
-    } else if (formData.username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters'
+    } else if (formData.username.length < 2) {
+      newErrors.username = 'Username must be at least 2 characters'
     } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
       newErrors.username = 'Username can only contain letters, numbers, and underscores'
     }
@@ -335,6 +337,30 @@ export default function RegisterPage() {
                     </button>
                   </div>
                 )}
+                
+                {/* Password Match Indicator */}
+                {formData.confirmPassword && formData.password && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-3 rounded-lg bg-muted/50 border border-border flex items-center gap-2 text-xs ${
+                      formData.password === formData.confirmPassword ? 'text-green-600' : 'text-destructive'
+                    }`}
+                  >
+                    {formData.password === formData.confirmPassword ? (
+                      <>
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>Passwords match</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-3 w-3" />
+                        <span>Passwords do not match</span>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+
                 {errors.confirmPassword && (
                   <motion.p
                     initial={{ opacity: 0, y: -10 }}

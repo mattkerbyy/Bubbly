@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 import {
   MapPin,
   Link as LinkIcon,
@@ -13,6 +14,7 @@ import {
   UserMinus,
   Trash2,
   Upload,
+  MessageCircle,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -25,11 +27,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useUploadAvatar, useUploadCover, useDeleteAvatar, useDeleteCover } from '@/hooks/useUsers'
 import { useFollowUser, useUnfollowUser, useFollowStatus } from '@/hooks/useFollow'
+import { useGetOrCreateConversation } from '@/hooks/useMessages'
 
 const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
 
 export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, onShowFollowers, onShowFollowing }) {
+  const navigate = useNavigate()
   const [coverHover, setCoverHover] = useState(false)
   const [avatarHover, setAvatarHover] = useState(false)
   const [showAvatarMenu, setShowAvatarMenu] = useState(false)
@@ -82,7 +86,7 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, on
       await uploadAvatarMutation.mutateAsync(file)
       setShowAvatarMenu(false)
     } catch (error) {
-      console.error('Avatar upload error:', error)
+  // Avatar upload error handled by toast
     }
   }
 
@@ -106,7 +110,7 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, on
       await uploadCoverMutation.mutateAsync(file)
       setShowCoverMenu(false)
     } catch (error) {
-      console.error('Cover upload error:', error)
+  // Cover upload error handled by toast
     }
   }
 
@@ -115,7 +119,7 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, on
       await deleteAvatarMutation.mutateAsync()
       setShowAvatarMenu(false)
     } catch (error) {
-      console.error('Delete avatar error:', error)
+  // Delete avatar error handled by toast
     }
   }
 
@@ -124,7 +128,7 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, on
       await deleteCoverMutation.mutateAsync()
       setShowCoverMenu(false)
     } catch (error) {
-      console.error('Delete cover error:', error)
+  // Delete cover error handled by toast
     }
   }
 
@@ -420,6 +424,23 @@ export default function ProfileHeader({ profile, isOwnProfile, onEditProfile, on
                     <span>Follow</span>
                   </>
                 )}
+              </Button>
+            )}
+            
+            {/* Message Button - Show for other users */}
+            {!isOwnProfile && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 sm:flex-none gap-2"
+                onClick={() => {
+                  navigate('/messages', { 
+                    state: { otherUserId: profile.id } 
+                  })
+                }}
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span>Message</span>
               </Button>
             )}
           </motion.div>

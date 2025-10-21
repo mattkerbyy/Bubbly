@@ -108,26 +108,28 @@ export default function NotificationsList({ onClose }) {
     <div className="flex flex-col h-full">
       {/* Action Buttons */}
       {unreadCount > 0 && (
-        <div className="px-4 py-2 border-b border-border flex gap-2">
+        <div className="px-3 md:px-4 py-2 border-b border-border flex gap-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => markAllAsReadMutation.mutate()}
             disabled={markAllAsReadMutation.isPending}
-            className="flex-1 text-xs"
+            className="flex-1 text-xs h-8"
           >
-            <CheckCheck className="h-4 w-4 mr-1" />
-            Mark all read
+            <CheckCheck className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" />
+            <span className="hidden xs:inline">Mark all read</span>
+            <span className="xs:hidden">Read all</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowDeleteDialog(true)}
             disabled={deleteAllMutation.isPending}
-            className="flex-1 text-xs text-destructive hover:text-destructive"
+            className="flex-1 text-xs h-8 text-destructive hover:text-destructive"
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Clear all
+            <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1" />
+            <span className="hidden xs:inline">Clear all</span>
+            <span className="xs:hidden">Clear</span>
           </Button>
         </div>
       )}

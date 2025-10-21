@@ -9,6 +9,7 @@ import {
   getUserPosts,
   searchUsers,
 } from '@/services/userService'
+import api from '@/lib/api'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { toast } from 'sonner'
 
@@ -53,7 +54,7 @@ export const useUpdateProfile = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error || 'Failed to update profile')
-      console.error('Update profile error:', error)
+  // Update profile error handled by toast
     },
   })
 }
@@ -87,7 +88,7 @@ export const useUploadAvatar = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error || 'Failed to upload avatar')
-      console.error('Upload avatar error:', error)
+  // Upload avatar error handled by toast
     },
   })
 }
@@ -120,7 +121,7 @@ export const useUploadCover = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error || 'Failed to upload cover photo')
-      console.error('Upload cover error:', error)
+  // Upload cover error handled by toast
     },
   })
 }
@@ -154,7 +155,7 @@ export const useDeleteAvatar = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error || 'Failed to remove avatar')
-      console.error('Delete avatar error:', error)
+  // Delete avatar error handled by toast
     },
   })
 }
@@ -187,7 +188,7 @@ export const useDeleteCover = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error || 'Failed to remove cover photo')
-      console.error('Delete cover error:', error)
+  // Delete cover error handled by toast
     },
   })
 }
@@ -228,7 +229,31 @@ export const useSearchUsers = (query, options = {}) => {
     queryKey: ['searchUsers', query],
     queryFn: () => searchUsers(query),
     enabled: !!query && query.length >= 2,
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 1000, // 30 seconds,
     ...options,
+  })
+}
+
+/**
+ * Hook to get user shares with infinite scroll
+ */
+export const useUserShares = (userId) => {
+  return useInfiniteQuery({
+    queryKey: ['userShares', userId],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await api.get(`/shares/user/${userId}`, {
+        params: {
+          page: pageParam,
+          limit: 10,
+        },
+      })
+      return response.data
+    },
+    getNextPageParam: (lastPage) => {
+      const { currentPage, totalPages } = lastPage.pagination || {}
+      return currentPage < totalPages ? currentPage + 1 : undefined
+    },
+    enabled: !!userId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   })
 }

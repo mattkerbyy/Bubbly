@@ -121,7 +121,7 @@ export default function TermsPage() {
       title: '12. Dispute Resolution',
       content: [
         'Any disputes arising from these terms will be resolved through binding arbitration.',
-        'Arbitration will be conducted in San Francisco, California.',
+        'Arbitration will be conducted in Taguig City, Philippines.',
         'You waive your right to participate in class action lawsuits.',
         'Small claims court disputes are exempt from arbitration.',
       ]
@@ -129,8 +129,8 @@ export default function TermsPage() {
     {
       title: '13. Governing Law',
       content: [
-        'These Terms are governed by the laws of the State of California.',
-        'You consent to the exclusive jurisdiction of courts in San Francisco County, California.',
+        'These Terms are governed by the laws of the Republic of the Philippines.',
+        'You consent to the exclusive jurisdiction of courts in Taguig City, Philippines.',
       ]
     },
     {
@@ -147,7 +147,6 @@ export default function TermsPage() {
       content: [
         'For questions about these Terms of Service, contact us:',
         'Email: legal@bubbly.com',
-        'Address: Bubbly Inc., 123 Social Street, San Francisco, CA 94105',
         'Support: support@bubbly.com',
       ]
     },
@@ -190,7 +189,7 @@ export default function TermsPage() {
           <FileText className="w-16 h-16 text-primary mx-auto mb-6" />
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Terms of Service</h1>
           <p className="text-lg text-muted-foreground">
-            Last Updated: October 13, 2025
+            Last Updated: October 18, 2025
           </p>
           <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
             Welcome to Bubbly. These Terms of Service ("Terms") govern your access to and use of our platform. 

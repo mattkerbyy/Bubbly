@@ -1,22 +1,34 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { Send } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useCreateComment, useUpdateComment } from '@/hooks/useComments'
+import { useUpdateShareComment } from '@/hooks/useShareComments'
 import { motion } from 'framer-motion'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '')
 const MAX_LENGTH = 500
 
-export default function CommentInput({ postId, editingComment, onCancelEdit }) {
+const CommentInput = forwardRef(({ postId, shareId, editingComment, onCancelEdit }, ref) => {
   const { user } = useAuthStore()
   const createCommentMutation = useCreateComment()
   const updateCommentMutation = useUpdateComment()
+  const updateShareCommentMutation = useUpdateShareComment()
   const [content, setContent] = useState('')
   const textareaRef = useRef(null)
 
   const isEditing = !!editingComment
+
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      textareaRef.current?.focus()
+    },
+    scrollIntoView: (options) => {
+      textareaRef.current?.scrollIntoView(options)
+    }
+  }))
 
   useEffect(() => {
     if (editingComment) {
@@ -60,21 +72,31 @@ export default function CommentInput({ postId, editingComment, onCancelEdit }) {
 
     try {
       if (isEditing) {
-        await updateCommentMutation.mutateAsync({
-          commentId: editingComment.id,
-          content: contentToSubmit,
-        })
+        const targetShareId = shareId || editingComment?.shareId
+        if (targetShareId) {
+          await updateShareCommentMutation.mutateAsync({
+            commentId: editingComment.id,
+            content: contentToSubmit,
+            shareId: targetShareId,
+          })
+        } else {
+          await updateCommentMutation.mutateAsync({
+            commentId: editingComment.id,
+            content: contentToSubmit,
+          })
+        }
         onCancelEdit?.()
       } else {
         await createCommentMutation.mutateAsync({
           postId,
+          shareId,
           content: contentToSubmit,
         })
       }
     } catch (error) {
       // Restore content if mutation failed
       setContent(contentToSubmit)
-      console.error('Failed to submit comment:', error)
+  // Failed to submit comment handled by UI
     }
   }
 
@@ -103,7 +125,10 @@ export default function CommentInput({ postId, editingComment, onCancelEdit }) {
     e.target.style.height = `${e.target.scrollHeight}px`
   }
 
-  const isSubmitting = createCommentMutation.isPending || updateCommentMutation.isPending
+  const isSubmitting =
+    createCommentMutation.isPending ||
+    updateCommentMutation.isPending ||
+    updateShareCommentMutation.isPending
   const canSubmit = content.trim().length > 0 && content.length <= MAX_LENGTH && !isSubmitting
 
   return (
@@ -171,4 +196,8 @@ export default function CommentInput({ postId, editingComment, onCancelEdit }) {
       </div>
     </motion.form>
   )
-}
+})
+
+CommentInput.displayName = 'CommentInput'
+
+export default CommentInput

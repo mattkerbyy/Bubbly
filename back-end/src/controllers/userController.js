@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { body, validationResult } from 'express-validator'
+import { comparePassword } from '../utils/auth.js'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -69,7 +70,7 @@ export const getProfile = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Get profile error:', error)
+    // Get profile failed
     res.status(500).json({
       success: false,
       error: 'Failed to fetch profile',
@@ -144,7 +145,7 @@ export const updateProfile = [
         data: updatedUser,
       })
     } catch (error) {
-      console.error('Update profile error:', error)
+        // Update profile failed
       res.status(500).json({
         success: false,
         error: 'Failed to update profile',
@@ -209,7 +210,7 @@ export const uploadAvatar = async (req, res) => {
       data: updatedUser,
     })
   } catch (error) {
-    console.error('Upload avatar error:', error)
+    // Upload avatar failed
     res.status(500).json({
       success: false,
       error: 'Failed to upload avatar',
@@ -273,7 +274,7 @@ export const uploadCover = async (req, res) => {
       data: updatedUser,
     })
   } catch (error) {
-    console.error('Upload cover error:', error)
+    // Upload cover failed
     res.status(500).json({
       success: false,
       error: 'Failed to upload cover photo',
@@ -319,26 +320,29 @@ export const getUserPosts = async (req, res) => {
             name: true,
             username: true,
             avatar: true,
+            verified: true,
           },
         },
         _count: {
           select: {
-            likes: true,
+            reactions: true,
             comments: true,
+            shares: true,
           },
         },
-        likes: {
+        reactions: {
           where: { userId: currentUserId },
-          select: { id: true },
+          select: {
+            id: true,
+            reactionType: true,
+          },
         },
       },
     })
 
-    // Add isLiked field
-    const postsWithLikeStatus = posts.map((post) => ({
+    // Remove reactions array from response (keep it minimal)
+    const postsWithCleanData = posts.map((post) => ({
       ...post,
-      isLiked: post.likes.length > 0,
-      likes: undefined,
     }))
 
     // Get total count
@@ -348,7 +352,7 @@ export const getUserPosts = async (req, res) => {
 
     res.json({
       success: true,
-      data: postsWithLikeStatus,
+      data: postsWithCleanData,
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(totalPosts / parseInt(limit)),
@@ -357,7 +361,7 @@ export const getUserPosts = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Get user posts error:', error)
+    // Get user posts failed
     res.status(500).json({
       success: false,
       error: 'Failed to fetch user posts',
@@ -413,7 +417,7 @@ export const deleteAvatar = async (req, res) => {
       data: updatedUser,
     })
   } catch (error) {
-    console.error('Delete avatar error:', error)
+    // Delete avatar failed
     res.status(500).json({
       success: false,
       error: 'Failed to delete avatar',
@@ -469,7 +473,7 @@ export const deleteCover = async (req, res) => {
       data: updatedUser,
     })
   } catch (error) {
-    console.error('Delete cover error:', error)
+    // Delete cover failed
     res.status(500).json({
       success: false,
       error: 'Failed to delete cover photo',
@@ -522,10 +526,59 @@ export const searchUsers = async (req, res) => {
       data: users,
     })
   } catch (error) {
-    console.error('Search users error:', error)
+    // Search users failed
     res.status(500).json({
       success: false,
       error: 'Failed to search users',
+    })
+  }
+}
+
+/**
+ * @route   DELETE /api/users/account
+ * @desc    Delete user account permanently
+ * @access  Private
+ */
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const { password } = req.body
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        error: 'Password is required to delete account'
+      })
+    }
+
+    // Get user with password
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+
+    // Verify password
+    const isMatch = await comparePassword(password, user.password)
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        error: 'Incorrect password'
+      })
+    }
+
+    // Delete user account (cascade will handle related data)
+    await prisma.user.delete({
+      where: { id: userId }
+    })
+
+    res.json({
+      success: true,
+      message: 'Account deleted successfully'
+    })
+  } catch (error) {
+    console.error('Delete account error:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete account'
     })
   }
 }

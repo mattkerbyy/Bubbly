@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useInView } from 'react-intersection-observer'
-import { Loader2 } from 'lucide-react'
+import { Mailbox, Loader2 } from 'lucide-react'
 import { useInfiniteUserPosts } from '@/hooks/useUsers'
 import Post from './Post'
 import { ProfilePostsSkeleton } from './skeletons/ProfileSkeleton'
@@ -55,19 +55,13 @@ export default function ProfilePosts({ username }) {
 
   if (posts.length === 0) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card border border-border rounded-lg p-12 text-center"
-      >
-        <div className="max-w-md mx-auto">
-          <div className="text-6xl mb-4">📭</div>
-          <h3 className="text-xl font-semibold mb-2">No posts yet</h3>
-          <p className="text-muted-foreground">
-            {username} hasn't posted anything yet.
-          </p>
-        </div>
-      </motion.div>
+      <div className="bg-card border border-border rounded-lg p-12 text-center">
+        <Mailbox className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
+        <h3 className="text-lg font-semibold mb-2">No reacted posts yet</h3>
+        <p className="text-muted-foreground">
+          {username} hasn't posted anything yet.
+        </p>
+      </div>
     )
   }
 

@@ -40,7 +40,7 @@ export default function LikesModal({ postId, isOpen, onClose }) {
       setLikes(data.likes || [])
     } catch (err) {
       setError('Failed to load likes')
-      console.error('Error fetching likes:', err)
+  // Error fetching likes handled by UI
     } finally {
       setIsLoading(false)
     }
@@ -82,7 +82,7 @@ export default function LikesModal({ postId, isOpen, onClose }) {
         ))
       }
     } catch (error) {
-      console.error('Error toggling follow:', error)
+  // Error toggling follow handled by UI
     }
   }
 

@@ -1,18 +1,22 @@
-import { useState, forwardRef } from 'react'
+import { useState, forwardRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { Heart, MessageCircle, Share2, MoreHorizontal, Trash2, Edit, ExternalLink, Eye, FileText, Music, Video as VideoIcon, Image as ImageIcon } from 'lucide-react'
+import { MessageCircle, MoreHorizontal, Trash2, Edit, ExternalLink, Eye, FileText, Music, Video as VideoIcon, Image as ImageIcon } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useDeletePost } from '@/hooks/usePosts'
-import { useToggleLike } from '@/hooks/useLikes'
+import { useAddOrUpdateReaction, useRemoveReaction } from '@/hooks/useReactions'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import PostPreviewModal from '@/components/PostPreviewModal'
 import EditPostModal from '@/components/EditPostModal'
-import LikesModal from '@/components/LikesModal'
+import ReactionPicker from '@/components/ReactionPicker'
+import ShareButton from '@/components/ShareButton'
+import { AudienceIcon } from '@/components/AudienceSelector'
+import ReactionsModal from '@/components/ReactionsModal'
 import LikesList from '@/components/LikesList'
+import ShareListModal from '@/components/ShareListModal'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,20 +39,40 @@ import {
 const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const API_URL = rawApiUrl.replace(/\/api\/?$/, '')
 
-const Post = forwardRef(({ post }, ref) => {
+const Post = forwardRef(({ post, isEmbedded = false }, ref) => {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const deletePostMutation = useDeletePost()
-  const toggleLikeMutation = useToggleLike()
+  const addOrUpdateReactionMutation = useAddOrUpdateReaction()
+  const removeReactionMutation = useRemoveReaction()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [showLikesModal, setShowLikesModal] = useState(false)
+  const [showReactionsModal, setShowReactionsModal] = useState(false)
+  const [isShareListOpen, setIsShareListOpen] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [showPostPreview, setShowPostPreview] = useState(false)
-  const [isLiked, setIsLiked] = useState(post.isLiked || false)
-  const [likeCount, setLikeCount] = useState(post._count?.likes || 0)
+  
+  // userReaction is now a string (reactionType) from backend, not an object
+  const getUserReaction = (postData) => {
+    if (!postData) return null
+    // Backend now returns userReaction as a string directly
+    return postData.userReaction || null
+  }
+
+  const [userReaction, setUserReaction] = useState(getUserReaction(post))
+  const [reactionCount, setReactionCount] = useState(post._count?.reactions || 0)
 
   const isOwnPost = user?.id === post.user.id
+
+  // Sync reaction state when post prop changes (e.g., after cache update)
+  useEffect(() => {
+    const newReaction = getUserReaction(post)
+    const newCount = post._count?.reactions || 0
+    
+    // Always update state when post data changes
+    setUserReaction(newReaction)
+    setReactionCount(newCount)
+  }, [post, user?.id]) // Depend on post and current user to catch all changes
 
   const getInitials = (name) => {
     if (!name) return 'U'
@@ -104,24 +128,43 @@ const Post = forwardRef(({ post }, ref) => {
       await deletePostMutation.mutateAsync(post.id)
       setShowDeleteDialog(false)
     } catch (error) {
-      console.error('Failed to delete post:', error)
+  // Delete post error handled by UI
     }
   }
 
-  const handleLike = async (e) => {
-    e.stopPropagation()
-    
-    // Optimistic update
-    setIsLiked(!isLiked)
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1)
+  const handleReaction = async (reactionType) => {
+    // If clicking the same reaction, remove it
+    if (userReaction === reactionType) {
+      const previousReaction = userReaction
+      const previousCount = reactionCount
+      
+      // Optimistic update
+      setUserReaction(null)
+      setReactionCount(Math.max(reactionCount - 1, 0))
 
-    try {
-      await toggleLikeMutation.mutateAsync(post.id)
-    } catch (error) {
-      // Revert on error
-      setIsLiked(isLiked)
-      setLikeCount(likeCount)
-      console.error('Failed to toggle like:', error)
+      try {
+        await removeReactionMutation.mutateAsync(post.id)
+      } catch (error) {
+        // Revert on error
+        setUserReaction(previousReaction)
+        setReactionCount(previousCount)
+      }
+    } else {
+      // Add or update reaction
+      const previousReaction = userReaction
+      const previousCount = reactionCount
+      
+      // Optimistic update
+      setUserReaction(reactionType)
+      setReactionCount(userReaction ? reactionCount : reactionCount + 1)
+
+      try {
+        await addOrUpdateReactionMutation.mutateAsync({ postId: post.id, reactionType })
+      } catch (error) {
+        // Revert on error
+        setUserReaction(previousReaction)
+        setReactionCount(previousCount)
+      }
     }
   }
 
@@ -173,33 +216,39 @@ const Post = forwardRef(({ post }, ref) => {
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+        <Card className={isEmbedded ? "border-0 shadow-none" : "hover:shadow-md transition-shadow"}>
+          <CardContent className={isEmbedded ? "p-4" : "p-6"}>
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
               <div 
                 className="flex items-center gap-3 cursor-pointer"
-                onClick={() => navigate(`/profile/${post.user.username}`)}
+                onClick={() => !isEmbedded && navigate(`/profile/${post.user.username}`)}
               >
-                <Avatar className="h-12 w-12">
+                <Avatar className={isEmbedded ? "h-10 w-10" : "h-12 w-12"}>
                   <AvatarImage src={getImageUrl(post.user.avatar)} />
                   <AvatarFallback className="bg-primary text-white">
                     {getInitials(post.user.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold text-foreground hover:underline">
+                  <p className={`font-semibold text-foreground ${!isEmbedded && 'hover:underline'}`}>
                     {post.user.name || 'Unknown User'}
                   </p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className={`flex items-center gap-2 ${isEmbedded ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
                     <span>@{post.user.username}</span>
                     <span>•</span>
                     <span>{formatDate(post.createdAt)}</span>
+                    {post.audience && (
+                      <>
+                        <span>•</span>
+                        <AudienceIcon audience={post.audience} />
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {isOwnPost && (
+              {!isEmbedded && isOwnPost && (
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -233,7 +282,7 @@ const Post = forwardRef(({ post }, ref) => {
                 </DropdownMenu>
               )}
 
-              {!isOwnPost && (
+              {!isEmbedded && !isOwnPost && (
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -281,7 +330,10 @@ const Post = forwardRef(({ post }, ref) => {
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.1 + index * 0.05 }}
                           className="rounded-lg overflow-hidden border border-border cursor-pointer group"
-                          onClick={() => setShowPostPreview(true)}
+                          onClick={(e) => {
+                            if (isEmbedded) e.stopPropagation()
+                            setShowPostPreview(true)
+                          }}
                         >
                           <img
                             src={fileUrl}
@@ -369,72 +421,62 @@ const Post = forwardRef(({ post }, ref) => {
               )}
 
               {/* Engagement stats - Facebook style */}
-              {(likeCount > 0 || post._count?.comments > 0) && (
+              {!isEmbedded && (reactionCount > 0 || post._count?.comments > 0 || post._count?.shares > 0) && (
                 <div className="flex items-center justify-between pt-3 pb-2">
-                  {/* Likes with avatars */}
+                  {/* Reactions with avatars */}
                   <LikesList
                     postId={post.id}
-                    likeCount={likeCount}
-                    onViewAll={() => setShowLikesModal(true)}
+                    likeCount={reactionCount}
+                    userReaction={userReaction}
+                    onViewAll={() => setShowReactionsModal(true)}
                   />
                   
-                  {/* Comments count */}
-                  {post._count?.comments > 0 && (
-                    <button
-                      onClick={() => setShowPostPreview(true)}
-                      className="text-sm text-muted-foreground hover:underline"
-                    >
-                      {post._count.comments} {post._count.comments === 1 ? 'comment' : 'comments'}
-                    </button>
-                  )}
+                  {/* Comments and shares count on the right */}
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground ml-auto">
+                    {post._count?.comments > 0 && (
+                      <button
+                        onClick={() => setShowPostPreview(true)}
+                        className="hover:underline"
+                      >
+                        {post._count.comments} {post._count.comments === 1 ? 'comment' : 'comments'}
+                      </button>
+                    )}
+                    {post._count?.shares > 0 && (
+                      <button
+                        onClick={() => setIsShareListOpen(true)}
+                        className="hover:underline"
+                      >
+                        {post._count.shares} {post._count.shares === 1 ? 'share' : 'shares'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-around pt-2 border-t border-border">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLike}
-                  disabled={toggleLikeMutation.isPending}
-                  className={`flex-1 gap-2 transition-colors ${
-                    isLiked
-                      ? 'text-red-500 hover:text-red-600'
-                      : 'text-muted-foreground hover:text-primary'
-                  }`}
-                >
-                  <motion.div
-                    key={isLiked ? 'liked' : 'unliked'}
-                    initial={{ scale: 0.8 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+              {/* Action Buttons - Hidden when embedded */}
+              {!isEmbedded && (
+                <div className="flex items-center justify-around pt-2 border-t border-border">
+                  <ReactionPicker
+                    postId={post.id}
+                    currentReaction={userReaction}
+                    onReactionChange={handleReaction}
+                    disabled={addOrUpdateReactionMutation.isPending || removeReactionMutation.isPending}
+                    wrapperClassName="flex-1"
+                  />
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPostPreview(true)}
+                    className="flex-1 gap-2 text-muted-foreground hover:text-primary"
                   >
-                    <Heart
-                      className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`}
-                    />
-                  </motion.div>
-                  <span className="font-medium">Like</span>
-                </Button>
+                    <MessageCircle className="h-5 w-5" />
+                    <span className="font-medium">Comment</span>
+                  </Button>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowPostPreview(true)}
-                  className="flex-1 gap-2 text-muted-foreground hover:text-primary"
-                >
-                  <MessageCircle className="h-5 w-5" />
-                  <span className="font-medium">Comment</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 gap-2 text-muted-foreground hover:text-primary"
-                >
-                  <Share2 className="h-5 w-5" />
-                  <span className="font-medium">Share</span>
-                </Button>
-              </div>
+                  <ShareButton post={post} />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -462,26 +504,41 @@ const Post = forwardRef(({ post }, ref) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Post preview modal */}
-      <PostPreviewModal
-        isOpen={showPostPreview}
-        post={post}
-        onClose={() => setShowPostPreview(false)}
-      />
+      {/* Post preview modal - Only show when not embedded */}
+      {!isEmbedded && (
+        <PostPreviewModal
+          isOpen={showPostPreview}
+          post={post}
+          onClose={() => setShowPostPreview(false)}
+        />
+      )}
 
-      {/* Edit post modal */}
-      <EditPostModal
-        post={post}
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-      />
+      {/* Edit post modal - Only show when not embedded */}
+      {!isEmbedded && (
+        <EditPostModal
+          post={post}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
 
-      {/* Likes modal */}
-      <LikesModal
-        postId={post.id}
-        isOpen={showLikesModal}
-        onClose={() => setShowLikesModal(false)}
-      />
+      {/* Reactions modal - Only show when not embedded */}
+      {!isEmbedded && (
+        <ReactionsModal
+          postId={post.id}
+          isOpen={showReactionsModal}
+          onClose={() => setShowReactionsModal(false)}
+        />
+      )}
+
+      {/* Share list modal - Only show when not embedded */}
+      {!isEmbedded && (
+        <ShareListModal
+          postId={post.id}
+          isOpen={isShareListOpen}
+          onClose={() => setIsShareListOpen(false)}
+        />
+      )}
     </>
   )
 })

@@ -65,7 +65,7 @@ export const getAllNotifications = async (req, res) => {
       unreadCount,
     })
   } catch (error) {
-    console.error('Get notifications error:', error)
+    // Get notifications failed
     res.status(500).json({
       success: false,
       error: 'Failed to fetch notifications',
@@ -94,7 +94,7 @@ export const getUnreadCount = async (req, res) => {
       data: { unreadCount },
     })
   } catch (error) {
-    console.error('Get unread count error:', error)
+    // Get unread count failed
     res.status(500).json({
       success: false,
       error: 'Failed to fetch unread count',
@@ -161,7 +161,7 @@ export const markAsRead = async (req, res) => {
       data: updatedNotification,
     })
   } catch (error) {
-    console.error('Mark as read error:', error)
+    // Mark as read failed
     res.status(500).json({
       success: false,
       error: 'Failed to mark notification as read',
@@ -191,7 +191,7 @@ export const markAllAsRead = async (req, res) => {
       message: 'All notifications marked as read',
     })
   } catch (error) {
-    console.error('Mark all as read error:', error)
+    // Mark all as read failed
     res.status(500).json({
       success: false,
       error: 'Failed to mark all notifications as read',
@@ -238,7 +238,7 @@ export const deleteNotification = async (req, res) => {
       message: 'Notification deleted successfully',
     })
   } catch (error) {
-    console.error('Delete notification error:', error)
+    // Delete notification failed
     res.status(500).json({
       success: false,
       error: 'Failed to delete notification',
@@ -264,7 +264,7 @@ export const deleteAllNotifications = async (req, res) => {
       message: 'All notifications deleted successfully',
     })
   } catch (error) {
-    console.error('Delete all notifications error:', error)
+    // Delete all notifications failed
     res.status(500).json({
       success: false,
       error: 'Failed to delete all notifications',
@@ -276,7 +276,7 @@ export const deleteAllNotifications = async (req, res) => {
  * Helper function to create a notification
  * Used by other controllers (likes, comments, follows)
  */
-export const createNotification = async ({ type, senderId, recipientId, postId, content }) => {
+export const createNotification = async ({ type, senderId, recipientId, postId, shareId, content, reactionType }) => {
   try {
     // Don't create notification if sender and recipient are the same
     if (senderId === recipientId) {
@@ -287,9 +287,11 @@ export const createNotification = async ({ type, senderId, recipientId, postId, 
       data: {
         type,
         content,
+        reactionType, // Add reactionType field
         senderId,
         recipientId,
         postId,
+        shareId,
       },
       include: {
         sender: {
@@ -314,6 +316,7 @@ export const createNotification = async ({ type, senderId, recipientId, postId, 
 
     return notification
   } catch (error) {
+    // Create notification failed
     console.error('Create notification error:', error)
     return null
   }

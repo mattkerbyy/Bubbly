@@ -1,29 +1,107 @@
 import { useState, useEffect } from 'react'
-import { Heart } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { getPostLikes } from '@/services/likeService'
+import { getPostReactions } from '@/services/reactionService'
+import { getShareReactions } from '@/services/shareReactionService'
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api\/?$/, '')
 
-export default function LikesList({ postId, likeCount, onViewAll }) {
-  const [topLikers, setTopLikers] = useState([])
+export default function LikesList({ postId, shareId, likeCount, userReaction, onViewAll, isShare = false }) {
+  const [topReactions, setTopReactions] = useState([])
+  const [dominantReaction, setDominantReaction] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    if (postId && likeCount > 0) {
-      fetchTopLikers()
-    }
-  }, [postId, likeCount])
+  const entityId = isShare ? shareId : postId
 
-  const fetchTopLikers = async () => {
+  useEffect(() => {
+    if (entityId && likeCount > 0) {
+      fetchTopReactions()
+    } else {
+      // Reset when count becomes 0
+      setTopReactions([])
+      setDominantReaction(null)
+    }
+  }, [entityId, likeCount, userReaction, isShare]) // Add isShare to trigger refetch
+
+  const fetchTopReactions = async () => {
     setIsLoading(true)
     try {
-      const data = await getPostLikes(postId, 1, 3) // Get top 3 likers
-      setTopLikers(data.likes || [])
+      // Use the appropriate service based on whether it's a share or post
+      const data = isShare 
+        ? await getShareReactions(shareId, 1, 20)
+        : await getPostReactions(postId, 1, 20)
+      const reactions = data.reactions || []
+      
+      // If we have the current user's reaction and it's the only one, use it immediately
+      if (reactions.length === 1 && userReaction) {
+        setDominantReaction(userReaction)
+        setTopReactions(reactions.slice(0, 3))
+        setIsLoading(false)
+        return
+      }
+      
+      // Count reaction types
+      const reactionCounts = {}
+      reactions.forEach(reaction => {
+        const type = reaction.reactionType
+        reactionCounts[type] = (reactionCounts[type] || 0) + 1
+      })
+      
+      // Find most common reaction type
+      let maxCount = 0
+      let mostCommon = userReaction || 'Heart' // Use userReaction as fallback instead of Heart
+      Object.entries(reactionCounts).forEach(([type, count]) => {
+        if (count > maxCount) {
+          maxCount = count
+          mostCommon = type
+        }
+      })
+      
+      setDominantReaction(mostCommon)
+      setTopReactions(reactions.slice(0, 3))
     } catch (err) {
-      console.error('Error fetching top likers:', err)
+      // Error fetching reactions - use userReaction if available
+      setDominantReaction(userReaction || 'Heart')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const getReactionIcon = (reactionType) => {
+    // Use emoji text for all reactions (matching notification style)
+    switch (reactionType) {
+      case 'Like':
+        return <span className="text-[10px]">👍</span>
+      case 'Heart':
+        return <span className="text-[10px]">❤️</span>
+      case 'Laughing':
+        return <span className="text-[10px]">😂</span>
+      case 'Wow':
+        return <span className="text-[10px]">😮</span>
+      case 'Sad':
+        return <span className="text-[10px]">😢</span>
+      case 'Angry':
+        return <span className="text-[10px]">😠</span>
+      default:
+        return <span className="text-[10px]">❤️</span>
+    }
+  }
+
+  const getReactionColor = (reactionType) => {
+    switch (reactionType) {
+      case 'Like':
+        return 'bg-blue-500'
+      case 'Heart':
+        return 'bg-red-500'
+      case 'Laughing':
+        return 'bg-yellow-500'
+      case 'Wow':
+        return 'bg-yellow-500'
+      case 'Sad':
+        return 'bg-gray-500'
+      case 'Angry':
+        return 'bg-orange-500'
+      default:
+        return 'bg-red-500'
     }
   }
 
@@ -50,22 +128,22 @@ export default function LikesList({ postId, likeCount, onViewAll }) {
       className="flex items-center gap-2 cursor-pointer hover:underline group"
       onClick={onViewAll}
     >
-      {/* Like icon in circle */}
+      {/* Reaction icon in circle - shows dominant reaction type */}
       <div className="flex -space-x-1">
-        <div className="h-5 w-5 rounded-full bg-red-500 flex items-center justify-center border-2 border-background z-10">
-          <Heart className="h-3 w-3 text-white fill-white" />
+        <div className={`h-5 w-5 rounded-full ${getReactionColor(dominantReaction || 'Heart')} flex items-center justify-center border-2 border-background z-10`}>
+          {getReactionIcon(dominantReaction || 'Heart')}
         </div>
         
-        {/* Top liker avatars */}
-        {!isLoading && topLikers.slice(0, 3).map((like, index) => (
+        {/* Top reactor avatars */}
+        {!isLoading && topReactions.slice(0, 3).map((reaction, index) => (
           <Avatar 
-            key={like.user.id} 
+            key={reaction.user.id} 
             className="h-5 w-5 border-2 border-background"
             style={{ zIndex: 9 - index }}
           >
-            <AvatarImage src={getImageUrl(like.user.avatar)} />
+            <AvatarImage src={getImageUrl(reaction.user.avatar)} />
             <AvatarFallback className="bg-primary text-white text-[8px]">
-              {getInitials(like.user.name)}
+              {getInitials(reaction.user.name)}
             </AvatarFallback>
           </Avatar>
         ))}
@@ -75,20 +153,20 @@ export default function LikesList({ postId, likeCount, onViewAll }) {
       <div className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
         {isLoading ? (
           <span>{likeCount}</span>
-        ) : topLikers.length > 0 ? (
+        ) : topReactions.length > 0 ? (
           <span>
-            {topLikers.slice(0, 2).map((like, index) => (
-              <span key={like.user.id}>
+            {topReactions.slice(0, 2).map((reaction, index) => (
+              <span key={reaction.user.id}>
                 {index > 0 && ', '}
                 <span className="font-medium text-foreground">
-                  {like.user.name}
+                  {reaction.user.name}
                 </span>
               </span>
             ))}
             {likeCount > 2 && (
               <span> and {likeCount - 2} other{likeCount - 2 !== 1 ? 's' : ''}</span>
             )}
-            {likeCount <= 2 && topLikers.length === likeCount && (
+            {likeCount <= 2 && topReactions.length === likeCount && (
               <span></span>
             )}
           </span>

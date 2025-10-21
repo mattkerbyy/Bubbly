@@ -20,7 +20,7 @@ const getInitialTheme = () => {
       }
     }
   } catch (error) {
-    console.error('Error reading stored theme:', error)
+    // Failed to read stored theme - fall back to system theme
   }
   
   return getSystemTheme()

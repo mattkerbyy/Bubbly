@@ -82,7 +82,7 @@ export const followUser = async (req, res) => {
       data: follow,
     })
   } catch (error) {
-    console.error('Follow user error:', error)
+    // Follow user failed
     res.status(500).json({
       success: false,
       error: 'Failed to follow user',
@@ -132,7 +132,7 @@ export const unfollowUser = async (req, res) => {
       message: 'Successfully unfollowed user',
     })
   } catch (error) {
-    console.error('Unfollow user error:', error)
+    // Unfollow user failed
     res.status(500).json({
       success: false,
       error: 'Failed to unfollow user',
@@ -212,7 +212,7 @@ export const getFollowers = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Get followers error:', error)
+    // Get followers failed
     res.status(500).json({
       success: false,
       error: 'Failed to fetch followers',
@@ -292,7 +292,7 @@ export const getFollowing = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Get following error:', error)
+    // Get following failed
     res.status(500).json({
       success: false,
       error: 'Failed to fetch following',
@@ -326,7 +326,7 @@ export const checkFollowStatus = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Check follow status error:', error)
+    // Check follow status failed
     res.status(500).json({
       success: false,
       error: 'Failed to check follow status',
@@ -386,7 +386,7 @@ export const getSuggestedUsers = async (req, res) => {
       data: suggestedUsers,
     })
   } catch (error) {
-    console.error('Get suggested users error:', error)
+    // Get suggested users failed
     res.status(500).json({
       success: false,
       error: 'Failed to fetch suggested users',

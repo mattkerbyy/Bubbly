@@ -10,6 +10,7 @@ import {
   deleteCover,
   getUserPosts,
   searchUsers,
+  deleteAccount,
 } from '../controllers/userController.js'
 
 const router = express.Router()
@@ -40,5 +41,8 @@ router.delete('/cover', deleteCover)
 
 // Get user posts
 router.get('/:username/posts', getUserPosts)
+
+// Delete account
+router.delete('/account', deleteAccount)
 
 export default router

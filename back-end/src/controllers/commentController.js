@@ -72,7 +72,7 @@ export const createComment = async (req, res) => {
       message: 'Comment created successfully',
     })
   } catch (error) {
-    console.error('Error creating comment:', error)
+    // Error creating comment
     return res.status(500).json({
       success: false,
       error: 'Failed to create comment',
@@ -137,7 +137,7 @@ export const getPostComments = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error getting comments:', error)
+    // Error getting comments
     return res.status(500).json({
       success: false,
       error: 'Failed to get comments',
@@ -211,7 +211,7 @@ export const updateComment = async (req, res) => {
       message: 'Comment updated successfully',
     })
   } catch (error) {
-    console.error('Error updating comment:', error)
+    // Error updating comment
     return res.status(500).json({
       success: false,
       error: 'Failed to update comment',
@@ -262,7 +262,7 @@ export const deleteComment = async (req, res) => {
       message: 'Comment deleted successfully',
     })
   } catch (error) {
-    console.error('Error deleting comment:', error)
+    // Error deleting comment
     return res.status(500).json({
       success: false,
       error: 'Failed to delete comment',

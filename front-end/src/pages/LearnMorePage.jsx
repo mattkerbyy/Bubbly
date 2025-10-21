@@ -15,13 +15,13 @@ export default function LearnMorePage() {
       icon: Users,
       title: 'Social Connections',
       description: 'Build and maintain meaningful relationships with friends, family, and like-minded individuals.',
-      benefits: ['Friend requests and followers', 'Mutual connections discovery', 'Community groups']
+      benefits: ['Friend requests and followers', 'Mutual connections discovery', 'Community groups (Soon)']
     },
     {
       icon: MessageCircle,
       title: 'Rich Content Sharing',
       description: 'Express yourself through posts, photos, videos, and more with our intuitive content creation tools.',
-      benefits: ['Text, image, and video posts', 'Story features', 'Live streaming capabilities']
+      benefits: ['Text, image, and video posts', 'Story features (Soon)', 'Live streaming capabilities (Soon)']
     },
     {
       icon: Heart,
@@ -45,7 +45,7 @@ export default function LearnMorePage() {
       icon: Shield,
       title: 'Privacy & Security',
       description: 'Your data is protected with industry-leading security measures and granular privacy controls.',
-      benefits: ['End-to-end encryption', 'Privacy settings', 'Two-factor authentication']
+      benefits: ['End-to-end encryption', 'Privacy settings', 'Two-factor authentication (Soon)']
     },
   ]
 
@@ -251,7 +251,7 @@ export default function LearnMorePage() {
                   'Granular privacy controls for your content',
                   'No selling of personal data to third parties',
                   'Regular security audits and updates',
-                  'GDPR and CCPA compliant',
+                  'Data Privacy Act of 2012 compliant',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />

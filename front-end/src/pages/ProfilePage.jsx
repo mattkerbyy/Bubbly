@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Grid3x3, Heart, X } from 'lucide-react'
+import { ArrowLeft, Grid3x3, Heart, Repeat2, X } from 'lucide-react'
 import { useUserProfile } from '@/hooks/useUsers'
 import { useAuthStore } from '@/stores/useAuthStore'
 import ProfileHeader from '@/components/ProfileHeader'
 import ProfilePosts from '@/components/ProfilePosts'
 import ProfileLikedPosts from '@/components/ProfileLikedPosts'
+import ProfileShares from '@/components/ProfileShares'
 import EditProfileModal from '@/components/EditProfileModal'
 import FollowersList from '@/components/FollowersList'
 import FollowingList from '@/components/FollowingList'
@@ -65,7 +66,8 @@ export default function ProfilePage() {
 
   const tabs = [
     { id: 'posts', label: 'Posts', icon: Grid3x3 },
-    { id: 'likes', label: 'Likes', icon: Heart },
+    { id: 'likes', label: 'Reactions', icon: Heart },
+    { id: 'shares', label: 'Shares', icon: Repeat2 },
   ]
 
   return (
@@ -143,6 +145,8 @@ export default function ProfilePage() {
             {activeTab === 'posts' && <ProfilePosts username={username} />}
             
             {activeTab === 'likes' && <ProfileLikedPosts userId={profile?.id} />}
+            
+            {activeTab === 'shares' && <ProfileShares userId={profile?.id} />}
           </motion.div>
         </motion.div>
       </div>

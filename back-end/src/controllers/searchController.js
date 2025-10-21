@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 /**
- * Search for users by name or username
+ * Search for users by name or username (including @ mentions)
  * GET /api/search/users?q=query&page=1&limit=10
  */
 export const searchUsers = async (req, res) => {
@@ -18,17 +18,20 @@ export const searchUsers = async (req, res) => {
       })
     }
 
-    const searchQuery = q.trim()
+    let searchQuery = q.trim()
+    
+    // Remove @ symbol if searching by @username
+    if (searchQuery.startsWith('@')) {
+      searchQuery = searchQuery.substring(1)
+    }
+
     const skip = (parseInt(page) - 1) * parseInt(limit)
 
-    // Search users by name or username (case-insensitive)
+    // Search users by name or username (case-insensitive) - NOW INCLUDES CURRENT USER
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where: {
           AND: [
-            {
-              id: { not: currentUserId }, // Exclude current user
-            },
             {
               isActive: true, // Only active users
             },
@@ -64,9 +67,6 @@ export const searchUsers = async (req, res) => {
       prisma.user.count({
         where: {
           AND: [
-            {
-              id: { not: currentUserId },
-            },
             {
               isActive: true,
             },
@@ -114,7 +114,7 @@ export const searchUsers = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error searching users:', error)
+    // Error searching users
     res.status(500).json({
       success: false,
       error: 'Failed to search users',
@@ -123,7 +123,7 @@ export const searchUsers = async (req, res) => {
 }
 
 /**
- * Search for posts by content
+ * Search for posts by content or hashtags
  * GET /api/search/posts?q=query&page=1&limit=10
  */
 export const searchPosts = async (req, res) => {
@@ -138,10 +138,15 @@ export const searchPosts = async (req, res) => {
       })
     }
 
-    const searchQuery = q.trim()
+    let searchQuery = q.trim()
+    
+    // Keep # for hashtag searches to match exact format
+    // But allow searching with or without #
+    const isHashtagSearch = searchQuery.startsWith('#')
+
     const skip = (parseInt(page) - 1) * parseInt(limit)
 
-    // Search posts by content (case-insensitive)
+    // Search posts by content (case-insensitive) including hashtags
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
         where: {
@@ -162,8 +167,9 @@ export const searchPosts = async (req, res) => {
           },
           _count: {
             select: {
-              likes: true,
+              reactions: true,
               comments: true,
+              shares: true,
             },
           },
         },
@@ -183,10 +189,10 @@ export const searchPosts = async (req, res) => {
       }),
     ])
 
-    // Check if current user liked each post
-    const postsWithLikeStatus = await Promise.all(
+    // Check if current user reacted to each post
+    const postsWithReactionStatus = await Promise.all(
       posts.map(async (post) => {
-        const like = await prisma.like.findFirst({
+        const reaction = await prisma.reaction.findFirst({
           where: {
             postId: post.id,
             userId: currentUserId,
@@ -195,15 +201,16 @@ export const searchPosts = async (req, res) => {
 
         return {
           ...post,
-          isLiked: !!like,
-          likesCount: post._count.likes,
+          userReaction: reaction?.reactionType || null,
+          reactionsCount: post._count.reactions,
           commentsCount: post._count.comments,
+          sharesCount: post._count.shares,
         }
       })
     )
 
     // Remove _count from response
-    const formattedPosts = postsWithLikeStatus.map(({ _count, ...post }) => post)
+    const formattedPosts = postsWithReactionStatus.map(({ _count, ...post }) => post)
 
     res.json({
       success: true,
@@ -216,7 +223,7 @@ export const searchPosts = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error searching posts:', error)
+    // Error searching posts
     res.status(500).json({
       success: false,
       error: 'Failed to search posts',
@@ -240,16 +247,18 @@ export const searchAll = async (req, res) => {
       })
     }
 
-    const searchQuery = q.trim()
+    let searchQuery = q.trim()
+    
+    // Remove @ symbol if searching by @username
+    if (searchQuery.startsWith('@')) {
+      searchQuery = searchQuery.substring(1)
+    }
 
-    // Search both users and posts (limited results for overview)
+    // Search both users and posts (limited results for overview) - INCLUDES CURRENT USER
     const [users, posts] = await Promise.all([
       prisma.user.findMany({
         where: {
           AND: [
-            {
-              id: { not: currentUserId },
-            },
             {
               isActive: true,
             },
@@ -300,8 +309,9 @@ export const searchAll = async (req, res) => {
           },
           _count: {
             select: {
-              likes: true,
+              reactions: true,
               comments: true,
+              shares: true,
             },
           },
         },
@@ -317,9 +327,6 @@ export const searchAll = async (req, res) => {
       prisma.user.count({
         where: {
           AND: [
-            {
-              id: { not: currentUserId },
-            },
             {
               isActive: true,
             },
@@ -361,10 +368,10 @@ export const searchAll = async (req, res) => {
       })
     )
 
-    // Add like status to posts
-    const postsWithLikeStatus = await Promise.all(
+    // Add reaction status to posts
+    const postsWithReactionStatus = await Promise.all(
       posts.map(async (post) => {
-        const like = await prisma.like.findFirst({
+        const reaction = await prisma.reaction.findFirst({
           where: {
             postId: post.id,
             userId: currentUserId,
@@ -373,16 +380,17 @@ export const searchAll = async (req, res) => {
 
         return {
           ...post,
-          isLiked: !!like,
-          likesCount: post._count.likes,
+          userReaction: reaction?.reactionType || null,
+          reactionsCount: post._count.reactions,
           commentsCount: post._count.comments,
+          sharesCount: post._count.shares,
         }
       })
     )
 
     // Remove _count from responses
     const formattedUsers = usersWithFollowStatus.map(({ _count, ...user }) => user)
-    const formattedPosts = postsWithLikeStatus.map(({ _count, ...post }) => post)
+    const formattedPosts = postsWithReactionStatus.map(({ _count, ...post }) => post)
 
     res.json({
       success: true,
@@ -397,7 +405,7 @@ export const searchAll = async (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error searching all:', error)
+    // Error searching all
     res.status(500).json({
       success: false,
       error: 'Failed to search',

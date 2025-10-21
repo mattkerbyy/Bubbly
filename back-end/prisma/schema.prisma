@@ -12,29 +12,83 @@ datasource db {
 
 // User model with authentication and profile fields
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  username    String   @unique
-  password    String
-  name        String?
-  bio         String?
-  avatar      String?
-  coverPhoto  String?
-  location    String?
-  website     String?
-  verified    Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String   @id @default(cuid())
+  email            String   @unique
+  username         String   @unique
+  password         String
+  name             String?
+  bio              String?
+  avatar           String?
+  coverPhoto       String?
+  location         String?
+  website              String?
+  verified             Boolean  @default(false)
+  isActive             Boolean  @default(true)
+  resetToken           String?
+  resetTokenExpiry     DateTime?
+  resetTokenRequestedAt DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  posts     Post[]
-  comments  Comment[]
-  likes     Like[]
-  followers Follower[] @relation("following")
-  following Follower[] @relation("follower")
+  posts          Post[]
+  comments       Comment[]
+  reactions      Reaction[]
+  shares         Share[]
+  shareComments  ShareComment[]
+  shareReactions ShareReaction[]
+  followers      Follower[] @relation("following")
+  following      Follower[] @relation("follower")
   
   notificationsSent     Notification[] @relation("sender")
   notificationsReceived Notification[] @relation("recipient")
+  
+  // Messaging relations
+  sentMessages          Message[]            @relation("sender")
+  receivedMessages      Message[]            @relation("recipient")
+  conversationsAsUser1  Conversation[]       @relation("user1")
+  conversationsAsUser2  Conversation[]       @relation("user2")
+}
+
+model Conversation {
+  id               String   @id @default(cuid())
+  user1Id          String
+  user2Id          String
+  lastMessageAt    DateTime @default(now())
+  lastMessageText  String?
+  user1UnreadCount Int      @default(0)
+  user2UnreadCount Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user1    User      @relation("user1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2    User      @relation("user2", fields: [user2Id], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  recipientId    String
+  content        String
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient    User         @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([createdAt])
+  @@index([isRead])
 }
 
 model Post {
@@ -42,16 +96,19 @@ model Post {
   content   String?
   file      String?        // Single file path (backward compatibility)
   files     String[] @default([])  // Array of all file paths
+  audience  String   @default("Public") // "Public", "OnlyMe", "Following"
   userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   comments      Comment[]
-  likes         Like[]
+  reactions     Reaction[]
+  shares        Share[]
   notifications Notification[]
 
   @@index([userId])
+  @@index([audience])
 }
 
 model Comment {
@@ -69,11 +126,28 @@ model Comment {
   @@index([userId])
 }
 
-model Like {
+model ShareComment {
   id        String   @id @default(cuid())
-  postId    String
+  content   String
+  shareId   String
   userId    String
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  share Share @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([shareId])
+  @@index([userId])
+}
+
+model Reaction {
+  id           String   @id @default(cuid())
+  postId       String
+  userId       String
+  reactionType String   // "Like", "Heart", "Laughing", "Wow", "Sad", "Angry"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -81,6 +155,46 @@ model Like {
   @@unique([postId, userId])
   @@index([postId])
   @@index([userId])
+  @@index([reactionType])
+}
+
+model ShareReaction {
+  id           String   @id @default(cuid())
+  shareId      String
+  userId       String
+  reactionType String   // "Like", "Heart", "Laughing", "Wow", "Sad", "Angry"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  share Share @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shareId, userId])
+  @@index([shareId])
+  @@index([userId])
+  @@index([reactionType])
+}
+
+model Share {
+  id           String   @id @default(cuid())
+  postId       String   // Original post (required)
+  userId       String
+  shareCaption String?
+  audience     String   @default("Public") // "Public", "OnlyMe", "Following"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  post             Post        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments         ShareComment[]
+  reactions        ShareReaction[]
+  notifications    Notification[]
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([audience])
 }
 
 model Follower {
@@ -98,22 +212,26 @@ model Follower {
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  type        String   // "like", "comment", "follow", "mention"
-  content     String?
-  senderId    String
-  recipientId String
-  postId      String?
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  type         String   // "reaction", "comment", "follow", "mention", "share"
+  content      String?
+  reactionType String?  // For reaction notifications: "Like", "Heart", "Laughing", "Wow", "Sad", "Angry"
+  senderId     String
+  recipientId  String
+  postId       String?
+  shareId      String?
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
-  sender    User  @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
-  recipient User  @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  post      Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+  sender    User   @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient User   @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  post      Post?  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  share     Share? @relation(fields: [shareId], references: [id], onDelete: Cascade)
 
   @@index([recipientId])
   @@index([senderId])
   @@index([postId])
+  @@index([shareId])
   @@index([isRead])
   @@index([createdAt])
 }
