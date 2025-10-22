@@ -69,7 +69,7 @@ services:
     networks:
       - bubbly-network
 
-  # Adminer (Database Management Tool) - Optional
+  # Adminer (Database Management Tool)
   adminer:
     image: adminer:latest
     container_name: bubbly-adminer
