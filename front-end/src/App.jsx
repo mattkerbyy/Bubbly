@@ -5,25 +5,24 @@ import { useAuthStore } from '@/stores/useAuthStore'
 import { useUiStore } from '@/stores/useUiStore'
 import { initializeTheme } from '@/lib/theme'
 import { initializeSocket, disconnectSocket } from '@/lib/socket'
-import PrivateRoute from '@/components/PrivateRoute'
-import GlobalChatPopup from '@/components/GlobalChatPopup'
+import PrivateRoute from '@/components/PrivateRouteFeature/PrivateRoute'
+import GlobalChatPopup from '@/components/ChatFeature/GlobalChatPopup'
 
 // Pages
-import LandingPage from '@/pages/LandingPage'
-import LoginPage from '@/pages/LoginPage'
-import RegisterPage from '@/pages/RegisterPage'
-import ForgotPasswordPage from '@/pages/ForgotPasswordPage'
-import HomePage from '@/pages/HomePage'
-import ProfilePage from '@/pages/ProfilePage'
-import PostDetailPage from '@/pages/PostDetailPage'
-// import ShareDetailPage from '@/pages/ShareDetailPage'
-import SearchResultsPage from '@/pages/SearchResultsPage'
-import ConnectionsPage from '@/pages/ConnectionsPage'
-import MessagesPage from '@/pages/MessagesPage'
-import LearnMorePage from '@/pages/LearnMorePage'
-import PrivacyPage from '@/pages/PrivacyPage'
-import TermsPage from '@/pages/TermsPage'
-import AboutPage from '@/pages/AboutPage'
+import LandingPage from '@/pages/LandingFeature/LandingPage'
+import LoginPage from '@/pages/AuthFeature/LoginPage'
+import RegisterPage from '@/pages/AuthFeature/RegisterPage'
+import ForgotPasswordPage from '@/pages/AuthFeature/ForgotPasswordPage'
+import HomePage from '@/pages/LeftSidebarFeature/HomePage'
+import ProfilePage from '@/pages/LeftSidebarFeature/ProfilePage'
+import PostDetailPage from '@/pages/PostFeature/PostDetailPage'
+import SearchResultsPage from '@/pages/SearchFeature/SearchResultsPage'
+import ConnectionsPage from '@/pages/LeftSidebarFeature/ConnectionsPage'
+import MessagesPage from '@/pages/LeftSidebarFeature/MessagesPage'
+import LearnMorePage from '@/pages/LandingFeature/LearnMorePage'
+import PrivacyPage from '@/pages/LandingFeature/PrivacyPage'
+import TermsPage from '@/pages/LandingFeature/TermsPage'
+import AboutPage from '@/pages/LandingFeature/AboutPage'
 
 function App() {
   const { isAuthenticated, getMe, token } = useAuthStore()
@@ -113,14 +112,6 @@ function App() {
             </PrivateRoute>
           }
         />
-        {/* <Route
-          path="/share/:shareId"
-          element={
-            <PrivateRoute>
-              <ShareDetailPage />
-            </PrivateRoute>
-          }
-        /> */}
         <Route
           path="/search"
           element={
